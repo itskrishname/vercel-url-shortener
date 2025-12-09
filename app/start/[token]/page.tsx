@@ -3,6 +3,8 @@ import Link from '@/models/Link';
 import { notFound } from 'next/navigation';
 import TimerPage from './TimerPage';
 
+export const dynamic = 'force-dynamic';
+
 interface Props {
   params: Promise<{
     token: string;
