@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isAuthenticated } from '@/lib/auth';
+import { isAuthenticated, ADMIN_CREDENTIALS } from '@/lib/auth';
 import dbConnect from '@/lib/db';
 import Link from '@/models/Link';
 import { nanoid } from 'nanoid';
+
+export const dynamic = 'force-dynamic';
 
 // Simple function to extract URL from text/json response
 // Many shorteners return just text, or JSON.
@@ -43,15 +45,19 @@ function extractUrlFromResponse(data: any): string {
 }
 
 export async function POST(req: NextRequest) {
-  if (!isAuthenticated(req)) {
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  // Allow authentication via API Key (for external programmatic use) or Session Cookie (for Admin Dashboard)
+  const apiKey = req.headers.get('x-api-key');
+  const isApiAuthorized = apiKey === ADMIN_CREDENTIALS.password;
+
+  if (!isApiAuthorized && !isAuthenticated(req)) {
+    return NextResponse.json({ message: 'Unauthorized. Provide valid x-api-key header or login.' }, { status: 401 });
   }
 
   try {
     const { longUrl, apiUrl, apiToken } = await req.json();
 
     if (!longUrl || !apiUrl || !apiToken) {
-      return NextResponse.json({ message: 'Missing fields' }, { status: 400 });
+      return NextResponse.json({ message: 'Missing fields: longUrl, apiUrl, apiToken' }, { status: 400 });
     }
 
     // 1. Call External API
@@ -89,10 +95,17 @@ export async function POST(req: NextRequest) {
         token: token
     });
 
+    // Return the absolute URL of our Vercel app
+    // Assuming the request host is the domain
+    const host = req.headers.get('host');
+    const protocol = req.headers.get('x-forwarded-proto') || 'http';
+    const vercelUrl = `${protocol}://${host}/start/${token}`;
+
     return NextResponse.json({
         success: true,
         token: newLink.token,
-        externalShortUrl: newLink.externalShortUrl
+        externalShortUrl: newLink.externalShortUrl,
+        vercelLink: vercelUrl
     });
 
   } catch (error: any) {

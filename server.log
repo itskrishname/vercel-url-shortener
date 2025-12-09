@@ -1,0 +1,17 @@
+
+> universal-shortener@0.1.0 dev
+> next dev
+
+   ▲ Next.js 16.0.8 (Turbopack)
+   - Local:         http://localhost:3000
+   - Network:       http://192.168.0.2:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+ ✓ Ready in 2.8s
+Received API Key: admin12345
+Expected: admin12345
+Fetching external shortener: https://is.gd/create.php?format=simple&api=dummy_token&url=https%3A%2F%2Fgoogle.com
+External API Response: https://is.gd/jAxBiv
+ POST /api/generate 200 in 6.5s (compile: 1539ms, render: 4.9s)
