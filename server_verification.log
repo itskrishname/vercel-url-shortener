@@ -1,0 +1,15 @@
+
+> universal-shortener@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.2.0-canary.19
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.0.2:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1820ms
+ ○ Compiling /api/bridge ...
+ ✓ Compiled /api/bridge in 3.1s (424 modules)
+Bridge: Fetching external: https://is.gd/create.php?format=simple&api=dummy&url=https%3A%2F%2Fexample.com
+ GET /api/bridge?provider=https://is.gd/create.php?format=simple&key=dummy&url=https://example.com 200 in 7624ms
