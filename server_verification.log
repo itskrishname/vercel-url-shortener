@@ -13,3 +13,25 @@
  ✓ Compiled /api/bridge in 3.1s (424 modules)
 Bridge: Fetching external: https://is.gd/create.php?format=simple&api=dummy&url=https%3A%2F%2Fexample.com
  GET /api/bridge?provider=https://is.gd/create.php?format=simple&key=dummy&url=https://example.com 200 in 7624ms
+ ⚠ Found a change in next.config.ts. Restarting the server to apply the changes...
+   ▲ Next.js 15.2.0-canary.19
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.0.2:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 4.2s
+ ⚠ Found a change in next.config.ts. Restarting the server to apply the changes...
+   ▲ Next.js 15.3.6
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.0.2:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+
+   We detected TypeScript in your project and reconfigured your tsconfig.json file for you.
+   The following mandatory changes were made to your tsconfig.json:
+
+	- jsx was set to preserve (next.js implements its own optimized jsx transform)
+
+ ✓ Ready in 2.5s
