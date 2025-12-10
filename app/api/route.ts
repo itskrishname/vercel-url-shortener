@@ -22,6 +22,8 @@ export async function POST(req: NextRequest) {
 }
 
 async function handleAdapter(req: NextRequest) {
+  console.log('[API Adapter] Incoming request:', req.url);
+
   const url = new URL(req.url);
   const searchParams = url.searchParams;
 

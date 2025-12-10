@@ -2,11 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  // Double check to ensure we never accidentally block API routes
-  if (request.nextUrl.pathname.startsWith('/api')) {
-      return NextResponse.next();
-  }
-
+  // Only run logic if path starts with /admin
   if (request.nextUrl.pathname.startsWith('/admin')) {
     const authCookie = request.cookies.get('admin_session');
 
@@ -14,13 +10,14 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
   }
+
+  // For all other routes (including /api), do nothing and let it pass.
   return NextResponse.next();
 }
 
 export const config = {
-  // Explicitly match only admin routes, but the function also checks.
+  // Only invoke middleware on admin routes to be absolutely safe
   matcher: [
     '/admin/:path*',
-    '/api/:path*' // We match API to ensure we explicitly ALLOW it (bypass) if needed, though default is allow.
   ],
 };
