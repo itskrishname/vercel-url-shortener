@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Link as LinkIcon, Zap, LogOut, X, Menu } from 'lucide-react';
+import { LayoutDashboard, Link as LinkIcon, Zap, LogOut, X, Menu, Activity } from 'lucide-react';
 import { useState } from 'react';
 
 export default function AdminSidebar() {
@@ -13,6 +13,7 @@ export default function AdminSidebar() {
     { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Manage Links', href: '/admin/links', icon: LinkIcon },
     { name: 'API Builder', href: '/admin/api', icon: Zap },
+    { name: 'Diagnostics', href: '/admin/test', icon: Activity },
   ];
 
   return (
