@@ -68,22 +68,47 @@ export async function processBridgeRequest(providerUrl: string, providerKey: str
         // 1. Initial Call
         let response = await performFetch(cleanProviderUrl);
 
-        // 2. Auto-Correction Logic: If HTML response, try appending '/api'
-        // Only try if the original URL didn't end in 'api' and response looks like HTML (dashboard)
-        if (response.text.trim().startsWith('<') && !cleanProviderUrl.endsWith('/api') && !cleanProviderUrl.endsWith('/api/')) {
-            console.log('Bridge Logic: Received HTML. Attempting auto-correction by appending /api');
+        // 2. Auto-Correction Logic: If HTML response, try sophisticated fallbacks
+        if (response.text.trim().startsWith('<')) {
+             console.log('Bridge Logic: Received HTML. Attempting auto-correction strategies.');
+             let strategySuccess = false;
 
-            // Remove trailing slash if exists
-            const baseUrl = cleanProviderUrl.replace(/\/$/, '');
-            const retryUrl = `${baseUrl}/api`;
+             // Strategy A: Append '/api' (if not already there)
+             if (!cleanProviderUrl.endsWith('/api') && !cleanProviderUrl.endsWith('/api/')) {
+                const baseUrl = cleanProviderUrl.replace(/\/$/, '');
+                const retryUrl = `${baseUrl}/api`;
+                console.log('Bridge Logic: Strategy A - Trying', retryUrl);
 
-            const retryResponse = await performFetch(retryUrl);
+                const retryResponse = await performFetch(retryUrl);
+                if (!retryResponse.text.trim().startsWith('<')) {
+                    console.log('Bridge Logic: Strategy A successful.');
+                    response = retryResponse;
+                    strategySuccess = true;
+                }
+             }
 
-            // If retry worked (got JSON or plain text link), use it!
-            if (!retryResponse.text.trim().startsWith('<')) {
-                console.log('Bridge Logic: Auto-correction successful.');
-                response = retryResponse;
-            }
+             // Strategy B: Root Domain + '/api' (if Strategy A failed or wasn't applicable)
+             // This handles cases like: https://site.com/member/tools/api -> https://site.com/api
+             if (!strategySuccess) {
+                 try {
+                     const parsedUrl = new URL(cleanProviderUrl);
+                     const rootApiUrl = `${parsedUrl.origin}/api`;
+
+                     // Only try if this is different from original and Strategy A
+                     if (rootApiUrl !== cleanProviderUrl && rootApiUrl !== (cleanProviderUrl.replace(/\/$/, '') + '/api')) {
+                         console.log('Bridge Logic: Strategy B - Trying Root Fallback', rootApiUrl);
+                         const rootResponse = await performFetch(rootApiUrl);
+
+                         if (!rootResponse.text.trim().startsWith('<')) {
+                             console.log('Bridge Logic: Strategy B successful.');
+                             response = rootResponse;
+                             strategySuccess = true;
+                         }
+                     }
+                 } catch (e) {
+                     console.log('Bridge Logic: Failed to parse URL for Strategy B');
+                 }
+             }
         }
 
         const { status: apiStatus, text: responseText } = response;
