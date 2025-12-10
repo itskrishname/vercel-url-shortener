@@ -83,10 +83,13 @@ export default function LinksPage() {
         fetchLinks();
         setFormData(prev => ({ ...prev, longUrl: '' }));
       } else {
-        alert('Failed to generate link. Check API settings.');
+        const errorData = await res.json().catch(() => ({}));
+        const msg = errorData.error || errorData.message || 'Failed to generate link';
+        const details = errorData.details ? `\n\nDetails: ${errorData.details}` : '';
+        alert(`Error: ${msg}${details}\n\nPlease check the Diagnostics page if this persists.`);
       }
     } catch (error) {
-      alert('Error generating link');
+      alert('Error generating link: ' + String(error));
     } finally {
       setLoading(false);
     }
