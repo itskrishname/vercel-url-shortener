@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
       response.cookies.set('admin_session', 'true', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: 'lax', // Changed from 'strict' to 'lax' for better navigation compatibility
         path: '/',
         maxAge: 60 * 60 * 24 * 7, // 1 week
       });

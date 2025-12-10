@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Zap, Copy, Check } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Zap, Copy, Check, Globe, Link as LinkIcon } from 'lucide-react';
 
 export default function ApiBuilderPage() {
   const [apiToolData, setApiToolData] = useState({
@@ -10,24 +10,30 @@ export default function ApiBuilderPage() {
       providerKey: '',
   });
   const [generatedApiUrl, setGeneratedApiUrl] = useState('');
-  const [copied, setCopied] = useState(false);
+  const [origin, setOrigin] = useState('');
+  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Capture the base URL of the Vercel app
+    setOrigin(window.location.origin);
+  }, []);
 
   const generateApiString = () => {
       // We use window.location.origin to point to THIS app's bridge
-      const baseUrl = `${window.location.origin}/api/bridge`;
+      const baseUrl = `${origin}/api/bridge`;
       // We encode the external provider's API URL and Key
       const finalUrl = `${baseUrl}?provider=${encodeURIComponent(apiToolData.providerUrl)}&key=${encodeURIComponent(apiToolData.providerKey)}&url=`;
       setGeneratedApiUrl(finalUrl);
   };
 
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopiedUrl(id);
+    setTimeout(() => setCopiedUrl(null), 2000);
   };
 
   return (
-    <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
        <div className="mb-8">
             <h1 className="text-3xl font-bold text-white mb-2">API Builder</h1>
             <p className="text-slate-400">Configure your external shortener connection.</p>
@@ -90,27 +96,62 @@ export default function ApiBuilderPage() {
            </div>
 
            {generatedApiUrl && (
-            <div className="mt-8 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl animate-in fade-in slide-in-from-top-2">
-              <p className="text-yellow-400 text-xs font-bold uppercase tracking-wider mb-3">
-                  Your Vercel Bridge URL
-              </p>
-              <div className="relative group">
-                <textarea
-                    readOnly
-                    className="w-full h-24 bg-slate-950/50 p-4 rounded-xl border border-white/10 text-xs text-slate-300 font-mono resize-none focus:outline-none"
-                    value={generatedApiUrl + 'YOUR_LONG_URL'}
-                />
-                <button
-                    onClick={() => copyToClipboard(generatedApiUrl)}
-                    className="absolute bottom-3 right-3 p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-white backdrop-blur-sm"
-                    title="Copy Base URL"
-                >
-                    {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
-                </button>
+            <div className="mt-8 space-y-6 animate-in fade-in slide-in-from-top-2">
+
+              {/* 1. App Base URL Result */}
+              <div className="p-4 bg-slate-800/50 border border-white/10 rounded-2xl">
+                <div className="flex items-center gap-2 mb-3">
+                    <Globe className="w-4 h-4 text-blue-400" />
+                    <p className="text-blue-400 text-xs font-bold uppercase tracking-wider">
+                        Your App Base URL
+                    </p>
+                </div>
+                <div className="relative group">
+                    <input
+                        readOnly
+                        className="w-full bg-slate-950/50 p-3 pr-12 rounded-xl border border-white/10 text-sm text-slate-300 font-mono focus:outline-none"
+                        value={origin}
+                    />
+                    <button
+                        onClick={() => copyToClipboard(origin, 'base')}
+                        className="absolute top-1/2 -translate-y-1/2 right-2 p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-white backdrop-blur-sm"
+                        title="Copy Base URL"
+                    >
+                        {copiedUrl === 'base' ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                </div>
+                <p className="text-[10px] text-slate-500 mt-2">
+                   Use this if your bot asks for a "Website URL" or "Shortener Domain".
+                </p>
               </div>
-              <p className="text-[10px] text-slate-500 mt-2 text-center">
-                  Copy this URL and add your destination link at the end.
-              </p>
+
+              {/* 2. Bridge API URL Result */}
+              <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl">
+                <div className="flex items-center gap-2 mb-3">
+                    <LinkIcon className="w-4 h-4 text-yellow-400" />
+                    <p className="text-yellow-400 text-xs font-bold uppercase tracking-wider">
+                        Your Bridge API URL
+                    </p>
+                </div>
+                <div className="relative group">
+                    <textarea
+                        readOnly
+                        className="w-full h-24 bg-slate-950/50 p-4 rounded-xl border border-white/10 text-xs text-slate-300 font-mono resize-none focus:outline-none"
+                        value={generatedApiUrl + 'YOUR_LONG_URL'}
+                    />
+                    <button
+                        onClick={() => copyToClipboard(generatedApiUrl, 'api')}
+                        className="absolute bottom-3 right-3 p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-white backdrop-blur-sm"
+                        title="Copy API URL"
+                    >
+                        {copiedUrl === 'api' ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                </div>
+                <p className="text-[10px] text-slate-500 mt-2 text-center">
+                    Copy this URL and add your destination link at the end. Use this as the "API URL".
+                </p>
+              </div>
+
             </div>
           )}
        </div>
