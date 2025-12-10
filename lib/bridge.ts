@@ -45,17 +45,41 @@ export async function processBridgeRequest(providerUrl: string, providerKey: str
     }
 
     try {
-        // 1. Call External Provider
-        const separator = providerUrl.includes('?') ? '&' : '?';
-        const fetchUrl = `${providerUrl}${separator}api=${providerKey}&url=${encodeURIComponent(destinationUrl)}`;
+        // Function to perform the fetch
+        const performFetch = async (url: string) => {
+             const separator = url.includes('?') ? '&' : '?';
+             const fetchUrl = `${url}${separator}api=${providerKey}&url=${encodeURIComponent(destinationUrl)}`;
+             console.log('Bridge Logic: Fetching external:', fetchUrl);
+             const res = await fetch(fetchUrl);
+             const text = await res.text();
+             return { status: res.status, text };
+        };
 
-        console.log('Bridge Logic: Fetching external:', fetchUrl);
+        // 1. Initial Call
+        let response = await performFetch(providerUrl);
 
-        const apiRes = await fetch(fetchUrl);
-        const responseText = await apiRes.text();
+        // 2. Auto-Correction Logic: If HTML response, try appending '/api'
+        // Only try if the original URL didn't end in 'api' and response looks like HTML (dashboard)
+        if (response.text.trim().startsWith('<') && !providerUrl.endsWith('/api') && !providerUrl.endsWith('/api/')) {
+            console.log('Bridge Logic: Received HTML. Attempting auto-correction by appending /api');
 
-        // Check for common error pages (like Vercel Auth or Provider Homepage)
-        if (apiRes.status === 401 || responseText.includes('Log in with Vercel')) {
+            // Remove trailing slash if exists
+            const baseUrl = providerUrl.replace(/\/$/, '');
+            const retryUrl = `${baseUrl}/api`;
+
+            const retryResponse = await performFetch(retryUrl);
+
+            // If retry worked (got JSON or plain text link), use it!
+            if (!retryResponse.text.trim().startsWith('<')) {
+                console.log('Bridge Logic: Auto-correction successful.');
+                response = retryResponse;
+            }
+        }
+
+        const { status: apiStatus, text: responseText } = response;
+
+        // Check for common error pages (like Vercel Auth)
+        if (apiStatus === 401 || responseText.includes('Log in with Vercel')) {
              return {
                 status: 502,
                 data: {
@@ -66,13 +90,13 @@ export async function processBridgeRequest(providerUrl: string, providerKey: str
             };
         }
 
-        // Check if response is HTML (likely wrong endpoint)
+        // Check if response is still HTML
         if (responseText.trim().startsWith('<')) {
              return {
                 status: 502,
                 data: {
                     error: 'Provider returned HTML instead of JSON.',
-                    details: 'You likely entered the main website URL (e.g., https://site.com) instead of the API endpoint (e.g., https://site.com/api). Please update the Provider URL.',
+                    details: 'You likely entered the main website URL (e.g., https://site.com) instead of the API endpoint (e.g., https://site.com/api). The system tried to auto-correct but failed. Please update the Provider URL.',
                     provider_response: responseText.substring(0, 500) // Log snippet
                 }
             };
@@ -101,10 +125,10 @@ export async function processBridgeRequest(providerUrl: string, providerKey: str
             };
         }
 
-        // 2. Generate Vercel Token
+        // 3. Generate Vercel Token
         const token = nanoid(8);
 
-        // 3. Save to DB
+        // 4. Save to DB
         await dbConnect();
         const newLink = await Link.create({
             originalUrl: destinationUrl,
@@ -112,7 +136,7 @@ export async function processBridgeRequest(providerUrl: string, providerKey: str
             token: token
         });
 
-        // 4. Return the Vercel Link
+        // 5. Return the Vercel Link
         const vercelLink = `${protocol}://${host}/start/${token}`;
 
         return {
