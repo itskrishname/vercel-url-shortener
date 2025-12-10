@@ -25,7 +25,8 @@ export default function LoginPage() {
       });
 
       if (res.ok) {
-        router.refresh(); // Refresh to update server components with new cookie
+        // router.refresh() is unnecessary here because we are doing a full navigation
+        // and it might be causing the perceived delay.
         router.push('/admin');
       } else {
         setError('Invalid username or password');

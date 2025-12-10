@@ -51,18 +51,32 @@ export async function processBridgeRequest(providerUrl: string, providerKey: str
             cleanProviderUrl = 'https://' + cleanProviderUrl;
         }
 
-        // Function to perform the fetch
+        // Function to perform the fetch with timeout
         const performFetch = async (url: string) => {
              const separator = url.includes('?') ? '&' : '?';
              const fetchUrl = `${url}${separator}api=${providerKey}&url=${encodeURIComponent(destinationUrl)}`;
              console.log('Bridge Logic: Fetching external:', fetchUrl);
-             const res = await fetch(fetchUrl, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+
+             const controller = new AbortController();
+             const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+
+             try {
+                const res = await fetch(fetchUrl, {
+                    signal: controller.signal,
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                    }
+                });
+                clearTimeout(timeoutId);
+                const text = await res.text();
+                return { status: res.status, text };
+             } catch (error: any) {
+                clearTimeout(timeoutId);
+                if (error.name === 'AbortError') {
+                    return { status: 504, text: JSON.stringify({ error: 'External API timed out (8s limit).' }) };
                 }
-             });
-             const text = await res.text();
-             return { status: res.status, text };
+                throw error;
+             }
         };
 
         // 1. Initial Call
