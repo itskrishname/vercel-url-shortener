@@ -81,6 +81,11 @@ async function handleAdapter(req: NextRequest) {
        return NextResponse.json({ error: 'Missing "url" parameter (destination).' }, { status: 400, headers });
   }
 
+  // Ensure destination URL has protocol
+  if (!destinationUrl.startsWith('http://') && !destinationUrl.startsWith('https://')) {
+      destinationUrl = 'http://' + destinationUrl;
+  }
+
   const host = req.headers.get('host') || 'localhost';
   const protocol = req.headers.get('x-forwarded-proto') || 'http';
 

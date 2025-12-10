@@ -65,6 +65,11 @@ export default function ApiBuilderPage() {
                     onChange={(e) => setApiToolData({...apiToolData, providerUrl: e.target.value})}
                   />
                   <p className="text-[10px] text-slate-600 ml-1">The API endpoint or main website of the shortener service.</p>
+                  {apiToolData.providerUrl && !apiToolData.providerUrl.endsWith('api') && (
+                     <p className="text-[10px] text-yellow-500 ml-1 mt-1 font-bold animate-pulse">
+                        Warning: Usually ends in "/api" or "/api/v1".
+                     </p>
+                  )}
                </div>
 
                <div className="space-y-1.5">

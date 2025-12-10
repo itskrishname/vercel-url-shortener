@@ -54,24 +54,50 @@ export async function processBridgeRequest(providerUrl: string, providerKey: str
         const apiRes = await fetch(fetchUrl);
         const responseText = await apiRes.text();
 
-        // Check for common error pages (like Vercel Auth)
+        // Check for common error pages (like Vercel Auth or Provider Homepage)
         if (apiRes.status === 401 || responseText.includes('Log in with Vercel')) {
              return {
                 status: 502,
                 data: {
                     error: 'Bridge URL is unauthorized (401).',
                     details: 'The provider URL seems to be protected (e.g., a Vercel Preview URL). Please check your Bridge URL configuration and ensure it points to a public Production URL.',
-                    provider_response: responseText.substring(0, 200) // Log first 200 chars
+                    provider_response: responseText.substring(0, 200)
+                }
+            };
+        }
+
+        // Check if response is HTML (likely wrong endpoint)
+        if (responseText.trim().startsWith('<')) {
+             return {
+                status: 502,
+                data: {
+                    error: 'Provider returned HTML instead of JSON.',
+                    details: 'You likely entered the main website URL (e.g., https://site.com) instead of the API endpoint (e.g., https://site.com/api). Please update the Provider URL.',
+                    provider_response: responseText.substring(0, 500) // Log snippet
                 }
             };
         }
 
         const externalShortUrl = extractUrlFromResponse(responseText);
 
+        // If extraction failed, maybe the provider returned a JSON error?
         if (!externalShortUrl || !externalShortUrl.startsWith('http')) {
+            let errorMsg = 'External API returned an invalid response.';
+            try {
+                const json = JSON.parse(responseText);
+                if (json.error) errorMsg = `Provider Error: ${json.error}`;
+                if (json.message) errorMsg = `Provider Error: ${json.message}`;
+            } catch (e) {
+                // Not JSON
+            }
+
             return {
                 status: 502,
-                data: { error: 'External API Failed', details: responseText }
+                data: {
+                    error: errorMsg,
+                    details: 'Could not extract a valid short URL from the provider response.',
+                    raw_response: responseText
+                }
             };
         }
 
