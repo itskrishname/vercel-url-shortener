@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Link as LinkIcon, ExternalLink, RefreshCw, Copy, Check, Search, Calendar, Globe, Trash2, Key, Edit2, Zap } from 'lucide-react';
+import { Plus, Link as LinkIcon, ExternalLink, RefreshCw, Copy, Check, Search, Calendar, Globe, Trash2, Key, Edit2, Zap, Menu, X, LayoutDashboard } from 'lucide-react';
 
 interface LinkData {
   token: string;
@@ -31,6 +31,9 @@ export default function AdminDashboard() {
 
   // Edit State
   const [editingLink, setEditingLink] = useState<LinkData | null>(null);
+
+  // Navigation State
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Fetch recent links on mount
   useEffect(() => {
@@ -119,24 +122,103 @@ export default function AdminDashboard() {
       setGeneratedApiUrl(finalUrl);
   };
 
+  const scrollToSection = (id: string) => {
+      if (id === 'dashboard') {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+          const element = document.getElementById(id);
+          if (element) {
+              element.scrollIntoView({ behavior: 'smooth' });
+          }
+      }
+      setIsSidebarOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-black text-slate-100 p-4 md:p-8 font-sans relative">
        {/* Background Elements */}
        <div className="absolute top-0 left-0 w-full h-[300px] bg-gradient-to-b from-blue-900/10 to-transparent pointer-events-none" />
 
+       {/* Mobile Navigation Sidebar */}
+       <div className={`fixed inset-0 z-50 lg:hidden transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+            {/* Backdrop */}
+            <div
+                className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                onClick={() => setIsSidebarOpen(false)}
+            />
+
+            {/* Drawer */}
+            <div className={`absolute top-0 left-0 w-[280px] h-full bg-slate-900 border-r border-white/10 transform transition-transform duration-300 p-6 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                            <LinkIcon className="w-4 h-4 text-white" />
+                        </div>
+                        <span className="font-bold text-white">Link Manager</span>
+                    </div>
+                    <button
+                        onClick={() => setIsSidebarOpen(false)}
+                        className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <nav className="space-y-2">
+                    <button
+                        onClick={() => scrollToSection('dashboard')}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-colors text-sm font-medium"
+                    >
+                        <LayoutDashboard className="w-4 h-4" />
+                        Dashboard
+                    </button>
+                    <button
+                        onClick={() => scrollToSection('manage-links')}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-colors text-sm font-medium"
+                    >
+                        <LinkIcon className="w-4 h-4" />
+                        Manage Links
+                    </button>
+                    <button
+                         onClick={() => scrollToSection('api-builder')}
+                         className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-colors text-sm font-medium"
+                    >
+                        <Zap className="w-4 h-4" />
+                        Manage API
+                    </button>
+                </nav>
+
+                <div className="absolute bottom-6 left-6 right-6">
+                    <div className="p-4 rounded-xl bg-blue-600/10 border border-blue-600/20">
+                        <p className="text-xs text-blue-400 font-medium text-center">
+                            Admin Console Active
+                        </p>
+                    </div>
+                </div>
+            </div>
+       </div>
+
       <div className="max-w-7xl mx-auto relative z-10">
         {/* Header */}
         <header className="flex flex-col md:flex-row items-center justify-between mb-10 gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            {/* Menu Button (Mobile) */}
+            <button
+                onClick={() => setIsSidebarOpen(true)}
+                className="lg:hidden p-2 -ml-2 hover:bg-white/10 rounded-xl transition-colors text-white mr-2"
+            >
+                <Menu className="w-6 h-6" />
+            </button>
+
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20 flex-shrink-0">
               <LinkIcon className="w-6 h-6 text-white" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white tracking-tight">Link Manager</h1>
-              <p className="text-slate-500 text-sm">Create and manage your redirects</p>
+              <p className="text-slate-500 text-sm hidden sm:block">Create and manage your redirects</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 self-end md:self-auto">
              <div className="px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full text-green-400 text-xs font-medium flex items-center gap-2">
                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                System Operational
@@ -150,7 +232,7 @@ export default function AdminDashboard() {
           <div className="lg:col-span-4 xl:col-span-3 space-y-6">
 
             {/* 1. Fast API Builder */}
-            <div className="bg-white/5 backdrop-blur-xl p-6 rounded-3xl border border-white/10 shadow-xl">
+            <div id="api-builder" className="bg-white/5 backdrop-blur-xl p-6 rounded-3xl border border-white/10 shadow-xl scroll-mt-24">
                <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-white">
                   <Zap className="w-5 h-5 text-yellow-400" />
                   API Builder
@@ -299,7 +381,7 @@ export default function AdminDashboard() {
 
           {/* List (Main Content) */}
           <div className="lg:col-span-8 xl:col-span-9">
-            <div className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-xl overflow-hidden flex flex-col h-full min-h-[500px]">
+            <div id="manage-links" className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-xl overflow-hidden flex flex-col h-full min-h-[500px] scroll-mt-24">
 
               {/* Toolbar */}
               <div className="p-6 border-b border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4">
