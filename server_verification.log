@@ -35,3 +35,14 @@ Bridge: Fetching external: https://is.gd/create.php?format=simple&api=dummy&url=
 	- jsx was set to preserve (next.js implements its own optimized jsx transform)
 
  ✓ Ready in 2.5s
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 11.8s (691 modules)
+ GET /api?api=http://google.com 404 in 12516ms
+ ✓ Compiled in 273ms (318 modules)
+ ✓ Compiled in 144ms (318 modules)
+ ✓ Compiled in 115ms (318 modules)
+ ✓ Compiled in 81ms (304 modules)
+ ○ Compiling /api ...
+ ✓ Compiled /api in 531ms (396 modules)
+Bridge Logic: Fetching external: https://is.gd/create.php?format=simple&api=dummy&url=https%3A%2F%2Fexample.com
+ GET /api?api=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fbridge%3Fprovider%3Dhttps%3A%2F%2Fis.gd%2Fcreate.php%3Fformat%3Dsimple%26key%3Ddummy&url=https://example.com 200 in 5327ms
