@@ -50,7 +50,11 @@ export async function processBridgeRequest(providerUrl: string, providerKey: str
              const separator = url.includes('?') ? '&' : '?';
              const fetchUrl = `${url}${separator}api=${providerKey}&url=${encodeURIComponent(destinationUrl)}`;
              console.log('Bridge Logic: Fetching external:', fetchUrl);
-             const res = await fetch(fetchUrl);
+             const res = await fetch(fetchUrl, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                }
+             });
              const text = await res.text();
              return { status: res.status, text };
         };
