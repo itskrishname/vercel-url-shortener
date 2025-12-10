@@ -21,11 +21,25 @@ function extractUrlFromResponse(data: any): string {
   }
 
   if (typeof data === 'object' && data !== null) {
+    // Standard keys
     if (data.shortenedUrl) return data.shortenedUrl;
     if (data.short_url) return data.short_url;
     if (data.url) return data.url;
     if (data.link) return data.link;
     if (data.short) return data.short;
+    if (data.shortLink) return data.shortLink; // Added common key
+
+    // Nested keys (e.g. data.url or data.shortenedUrl)
+    if (data.data) {
+        if (typeof data.data === 'string') return extractUrlFromResponse(data.data);
+        if (typeof data.data === 'object') {
+            if (data.data.url) return data.data.url;
+            if (data.data.shortenedUrl) return data.data.shortenedUrl;
+            if (data.data.link) return data.data.link;
+            if (data.data.short_url) return data.data.short_url;
+        }
+    }
+
     return JSON.stringify(data);
   }
   return '';

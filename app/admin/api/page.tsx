@@ -1,177 +1,291 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Zap, Copy, Check, Globe, Link as LinkIcon, Edit2 } from 'lucide-react';
+import { Copy, Check, Zap, Plus, Trash2, Save, Globe } from 'lucide-react';
+
+interface Provider {
+    _id: string;
+    name: string;
+    apiUrl: string;
+    apiToken: string;
+}
 
 export default function ApiBuilderPage() {
-  const [apiToolData, setApiToolData] = useState({
-      providerUrl: '', // This will now serve as the main URL (Web/API)
-      providerKey: '',
-  });
-  const [generatedApiUrl, setGeneratedApiUrl] = useState('');
-  const [origin, setOrigin] = useState('');
-  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
+    // State for the Generator Form
+    const [longUrl, setLongUrl] = useState('');
+    const [apiUrl, setApiUrl] = useState('');
+    const [apiToken, setApiToken] = useState('');
+    const [generatedLink, setGeneratedLink] = useState('');
+    const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    // Capture the base URL of the Vercel app only if not already set (allows editing)
-    if (!origin && typeof window !== 'undefined') {
-        setOrigin(window.location.origin);
-    }
-  }, []);
+    // State for Saved Providers
+    const [providers, setProviders] = useState<Provider[]>([]);
+    const [loadingProviders, setLoadingProviders] = useState(true);
+    const [isAddingProvider, setIsAddingProvider] = useState(false);
 
-  const generateApiString = () => {
-      // Ensure origin doesn't have a trailing slash
-      const cleanOrigin = origin.replace(/\/$/, '');
-      const baseUrl = `${cleanOrigin}/api/bridge`;
+    // New Provider Form State
+    const [newProviderName, setNewProviderName] = useState('');
+    const [newProviderUrl, setNewProviderUrl] = useState('');
+    const [newProviderToken, setNewProviderToken] = useState('');
+    const [saveError, setSaveError] = useState('');
 
-      const finalUrl = `${baseUrl}?provider=${encodeURIComponent(apiToolData.providerUrl)}&key=${encodeURIComponent(apiToolData.providerKey)}&url=`;
-      setGeneratedApiUrl(finalUrl);
-  };
+    // Fetch Providers on Load
+    useEffect(() => {
+        fetchProviders();
+    }, []);
 
-  const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedUrl(id);
-    setTimeout(() => setCopiedUrl(null), 2000);
-  };
+    const fetchProviders = async () => {
+        try {
+            const res = await fetch('/api/providers');
+            if (res.ok) {
+                const data = await res.json();
+                setProviders(data);
+            }
+        } catch (e) {
+            console.error('Failed to fetch providers', e);
+        } finally {
+            setLoadingProviders(false);
+        }
+    };
 
-  return (
-    <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
-       <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">API Builder</h1>
-            <p className="text-slate-400">Configure your external shortener connection.</p>
-       </div>
+    const handleSaveProvider = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSaveError('');
 
-       <div className="bg-white/5 backdrop-blur-xl p-6 md:p-8 rounded-3xl border border-white/10 shadow-xl">
-           <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center">
-                    <Zap className="w-5 h-5 text-yellow-400" />
-                </div>
-                <h2 className="text-lg font-bold text-white">Configuration</h2>
-           </div>
+        try {
+            const res = await fetch('/api/providers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: newProviderName,
+                    apiUrl: newProviderUrl,
+                    apiToken: newProviderToken
+                })
+            });
 
-           <p className="text-sm text-slate-400 mb-6">
-               Enter the details of your external URL shortener service to generate a compatible bridge URL for your bots.
-           </p>
+            if (res.ok) {
+                setIsAddingProvider(false);
+                setNewProviderName('');
+                setNewProviderUrl('');
+                setNewProviderToken('');
+                fetchProviders(); // Refresh list
+            } else {
+                const data = await res.json();
+                setSaveError(data.error || 'Failed to save provider');
+            }
+        } catch (e) {
+            setSaveError('Connection error');
+        }
+    };
 
-           <div className="space-y-4">
-               {/* Unified Provider URL */}
-               <div className="space-y-1.5">
-                  <label className="text-xs text-slate-500 font-bold uppercase tracking-wider ml-1">Provider URL</label>
-                  <input
-                    type="url"
-                    placeholder="https://gplinks.com/api"
-                    className="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-sm text-white focus:ring-2 focus:ring-yellow-500/50 outline-none transition-all"
-                    value={apiToolData.providerUrl}
-                    onChange={(e) => setApiToolData({...apiToolData, providerUrl: e.target.value})}
-                  />
-                  <p className="text-[10px] text-slate-600 ml-1">The API endpoint or main website of the shortener service.</p>
-                  {apiToolData.providerUrl && !apiToolData.providerUrl.endsWith('api') && (
-                     <p className="text-[10px] text-yellow-500 ml-1 mt-1 font-bold animate-pulse">
-                        Warning: Usually ends in "/api" or "/api/v1".
-                     </p>
-                  )}
-               </div>
+    const handleDeleteProvider = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this provider?')) return;
 
-               <div className="space-y-1.5">
-                  <label className="text-xs text-slate-500 font-bold uppercase tracking-wider ml-1">Provider API Token</label>
-                  <input
-                    type="password"
-                    placeholder="Secret Key"
-                    className="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-sm text-white focus:ring-2 focus:ring-yellow-500/50 outline-none transition-all"
-                    value={apiToolData.providerKey}
-                    onChange={(e) => setApiToolData({...apiToolData, providerKey: e.target.value})}
-                  />
-               </div>
+        try {
+            await fetch(`/api/providers/${id}`, { method: 'DELETE' });
+            fetchProviders();
+        } catch (e) {
+            console.error('Failed to delete', e);
+        }
+    };
 
-               {/* App Base URL - Now Editable */}
-               <div className="space-y-1.5 pt-4 border-t border-white/10">
-                  <label className="text-xs text-blue-400 font-bold uppercase tracking-wider ml-1 flex items-center gap-2">
-                      <Globe className="w-3 h-3" />
-                      App Base URL (Production)
-                  </label>
-                  <div className="relative">
-                      <input
-                        type="url"
-                        placeholder="https://your-app.vercel.app"
-                        className="w-full bg-slate-950/50 border border-blue-500/30 rounded-xl p-3 text-sm text-blue-100 focus:ring-2 focus:ring-blue-500/50 outline-none transition-all font-mono"
-                        value={origin}
-                        onChange={(e) => setOrigin(e.target.value)}
-                      />
-                      <Edit2 className="absolute right-3 top-3.5 w-4 h-4 text-slate-500 pointer-events-none" />
-                  </div>
-                  <p className="text-[10px] text-slate-500 ml-1">
-                      Ensure this is your <b>Production URL</b> (e.g. ends in .vercel.app), not a git-branch preview URL.
-                  </p>
-               </div>
+    const loadProvider = (provider: Provider) => {
+        setApiUrl(provider.apiUrl);
+        setApiToken(provider.apiToken);
+    };
 
-               <button
-                    onClick={generateApiString}
-                    className="w-full mt-4 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg shadow-orange-900/20 text-sm"
-                >
-                    Generate Bridge URL
-                </button>
-           </div>
+    const generateLink = () => {
+        if (!apiUrl || !apiToken) return;
 
-           {generatedApiUrl && (
-            <div className="mt-8 space-y-6 animate-in fade-in slide-in-from-top-2">
+        // Ensure clean inputs
+        const cleanApiUrl = apiUrl.trim();
+        const cleanToken = apiToken.trim();
 
-              {/* 1. App Base URL Result */}
-              <div className="p-4 bg-slate-800/50 border border-white/10 rounded-2xl">
-                <div className="flex items-center gap-2 mb-3">
-                    <Globe className="w-4 h-4 text-blue-400" />
-                    <p className="text-blue-400 text-xs font-bold uppercase tracking-wider">
-                        Your App Base URL
-                    </p>
-                </div>
-                <div className="relative group">
-                    <input
-                        readOnly
-                        className="w-full bg-slate-950/50 p-3 pr-12 rounded-xl border border-white/10 text-sm text-slate-300 font-mono focus:outline-none"
-                        value={origin}
-                    />
-                    <button
-                        onClick={() => copyToClipboard(origin, 'base')}
-                        className="absolute top-1/2 -translate-y-1/2 right-2 p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-white backdrop-blur-sm"
-                        title="Copy Base URL"
-                    >
-                        {copiedUrl === 'base' ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
-                    </button>
-                </div>
-                <p className="text-[10px] text-slate-500 mt-2">
-                   Use this if your bot asks for a "Website URL" or "Shortener Domain".
-                </p>
-              </div>
+        // Base URL of the Vercel App
+        const appBaseUrl = typeof window !== 'undefined' ? window.location.origin : '';
 
-              {/* 2. Bridge API URL Result */}
-              <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl">
-                <div className="flex items-center gap-2 mb-3">
-                    <LinkIcon className="w-4 h-4 text-yellow-400" />
-                    <p className="text-yellow-400 text-xs font-bold uppercase tracking-wider">
-                        Your Bridge API URL
-                    </p>
-                </div>
-                <div className="relative group">
-                    <textarea
-                        readOnly
-                        className="w-full h-24 bg-slate-950/50 p-4 rounded-xl border border-white/10 text-xs text-slate-300 font-mono resize-none focus:outline-none"
-                        value={generatedApiUrl + 'YOUR_LONG_URL'}
-                    />
-                    <button
-                        onClick={() => copyToClipboard(generatedApiUrl, 'api')}
-                        className="absolute bottom-3 right-3 p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-white backdrop-blur-sm"
-                        title="Copy API URL"
-                    >
-                        {copiedUrl === 'api' ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
-                    </button>
-                </div>
-                <p className="text-[10px] text-slate-500 mt-2 text-center">
-                    Copy this URL and add your destination link at the end. Use this as the "API URL".
-                </p>
-              </div>
+        // Use the /api/bridge endpoint which supports GET requests for bots
+        // Note: Using 'key' instead of 'api' to match standard query params if needed,
+        // but our bridge parses 'api' as the token key.
+        const link = `${appBaseUrl}/api/bridge?api=${cleanToken}&url=${longUrl || '{url}'}&provider=${encodeURIComponent(cleanApiUrl)}`;
+        setGeneratedLink(link);
+    };
 
+    const copyToClipboard = () => {
+        navigator.clipboard.writeText(generatedLink);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    return (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div>
+                <h1 className="text-3xl font-bold text-white mb-2">API Manager</h1>
+                <p className="text-slate-400">Manage external providers and generate Smart Links for your bots.</p>
             </div>
-          )}
-       </div>
-    </div>
-  );
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                {/* Left Column: Saved Providers */}
+                <div className="lg:col-span-1 space-y-6">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-xl font-bold text-white">Saved Providers</h2>
+                        <button
+                            onClick={() => setIsAddingProvider(!isAddingProvider)}
+                            className="p-2 bg-blue-600 rounded-lg hover:bg-blue-500 transition-colors text-white"
+                        >
+                            <Plus className="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    {isAddingProvider && (
+                        <div className="bg-slate-900/50 border border-blue-500/30 p-4 rounded-xl space-y-3">
+                            <h3 className="text-sm font-semibold text-blue-400">Add New Provider</h3>
+                            <input
+                                type="text"
+                                placeholder="Name (e.g. GPLinks)"
+                                className="w-full bg-black/30 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 outline-none"
+                                value={newProviderName}
+                                onChange={(e) => setNewProviderName(e.target.value)}
+                            />
+                            <input
+                                type="text"
+                                placeholder="API URL (e.g. https://site.com/api)"
+                                className="w-full bg-black/30 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 outline-none"
+                                value={newProviderUrl}
+                                onChange={(e) => setNewProviderUrl(e.target.value)}
+                            />
+                            <input
+                                type="text"
+                                placeholder="API Token"
+                                className="w-full bg-black/30 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 outline-none"
+                                value={newProviderToken}
+                                onChange={(e) => setNewProviderToken(e.target.value)}
+                            />
+                            {saveError && <p className="text-red-400 text-xs">{saveError}</p>}
+                            <button
+                                onClick={handleSaveProvider}
+                                className="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Save className="w-3 h-3" /> Save Provider
+                            </button>
+                        </div>
+                    )}
+
+                    <div className="space-y-3">
+                        {loadingProviders ? (
+                            <p className="text-slate-500 text-sm">Loading...</p>
+                        ) : providers.length === 0 ? (
+                            <p className="text-slate-500 text-sm italic">No providers saved yet.</p>
+                        ) : (
+                            providers.map((provider) => (
+                                <div key={provider._id} className="bg-white/5 border border-white/10 p-4 rounded-xl group hover:border-blue-500/30 transition-all">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h3 className="font-bold text-white">{provider.name}</h3>
+                                        <button
+                                            onClick={() => handleDeleteProvider(provider._id)}
+                                            className="text-slate-600 hover:text-red-400 transition-colors"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-slate-500 truncate mb-3">{provider.apiUrl}</p>
+                                    <button
+                                        onClick={() => loadProvider(provider)}
+                                        className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <Zap className="w-3 h-3" /> Use This API
+                                    </button>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+
+                {/* Right Column: Generator */}
+                <div className="lg:col-span-2">
+                    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-3 bg-blue-600/20 rounded-xl">
+                                <Zap className="w-6 h-6 text-blue-400" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-white">Smart Link Generator</h2>
+                                <p className="text-slate-400 text-sm">Generate a universal API link for your bots.</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">External API URL</label>
+                                <input
+                                    type="text"
+                                    value={apiUrl}
+                                    onChange={(e) => setApiUrl(e.target.value)}
+                                    placeholder="https://gplinks.com/api"
+                                    className="w-full bg-black/50 border border-slate-700 text-white rounded-xl py-3 px-4 focus:border-blue-500 outline-none transition-all"
+                                />
+                                {apiUrl && !apiUrl.endsWith('/api') && !apiUrl.endsWith('v1') && (
+                                    <p className="text-yellow-500 text-xs flex items-center gap-1">
+                                        ⚠️ Warning: Most API URLs end in <code>/api</code>. Double check your provider.
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">API Token</label>
+                                <input
+                                    type="text"
+                                    value={apiToken}
+                                    onChange={(e) => setApiToken(e.target.value)}
+                                    placeholder="e.g. 5d41402abc4b2a76b9719d911017c592"
+                                    className="w-full bg-black/50 border border-slate-700 text-white rounded-xl py-3 px-4 focus:border-blue-500 outline-none transition-all font-mono text-sm"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Test Destination URL (Optional)</label>
+                                <input
+                                    type="text"
+                                    value={longUrl}
+                                    onChange={(e) => setLongUrl(e.target.value)}
+                                    placeholder="Leave blank to generate a template link for bots"
+                                    className="w-full bg-black/50 border border-slate-700 text-white rounded-xl py-3 px-4 focus:border-blue-500 outline-none transition-all"
+                                />
+                            </div>
+
+                            <button
+                                onClick={generateLink}
+                                disabled={!apiUrl || !apiToken}
+                                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Generate Smart Link
+                            </button>
+
+                            {generatedLink && (
+                                <div className="mt-8 p-6 bg-slate-900/80 rounded-2xl border border-blue-500/20 animate-in fade-in slide-in-from-top-2">
+                                    <h3 className="text-sm font-bold text-slate-400 mb-2">Your Smart Link</h3>
+                                    <div className="flex gap-2">
+                                        <code className="flex-1 bg-black/50 p-3 rounded-lg text-blue-400 text-sm font-mono break-all border border-slate-800">
+                                            {generatedLink}
+                                        </code>
+                                        <button
+                                            onClick={copyToClipboard}
+                                            className="bg-slate-800 hover:bg-slate-700 text-white p-3 rounded-lg transition-colors border border-slate-700"
+                                        >
+                                            {copied ? <Check className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
+                                        </button>
+                                    </div>
+                                    <p className="mt-4 text-xs text-slate-500 leading-relaxed">
+                                        <strong>How to use:</strong> Copy this link and use it in your Telegram bot or script.
+                                        Replace <code>{'{url}'}</code> with the actual long URL you want to shorten dynamically.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 }
