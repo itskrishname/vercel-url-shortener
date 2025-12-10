@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Copy, Check, Zap, Plus, Trash2, Save, Globe } from 'lucide-react';
+import { Copy, Check, Zap, Plus, Trash2, Save, Globe, Key } from 'lucide-react';
 
 interface Provider {
     _id: string;
@@ -28,6 +28,10 @@ export default function ApiBuilderPage() {
     const [newProviderUrl, setNewProviderUrl] = useState('');
     const [newProviderToken, setNewProviderToken] = useState('');
     const [saveError, setSaveError] = useState('');
+
+    // Copy states
+    const [copiedKey, setCopiedKey] = useState<string | null>(null);
+    const [copiedSiteUrl, setCopiedSiteUrl] = useState(false);
 
     // Fetch Providers on Load
     useEffect(() => {
@@ -97,16 +101,10 @@ export default function ApiBuilderPage() {
     const generateLink = () => {
         if (!apiUrl || !apiToken) return;
 
-        // Ensure clean inputs
         const cleanApiUrl = apiUrl.trim();
         const cleanToken = apiToken.trim();
-
-        // Base URL of the Vercel App
         const appBaseUrl = typeof window !== 'undefined' ? window.location.origin : '';
 
-        // Use the /api/bridge endpoint which supports GET requests for bots
-        // Note: Using 'key' instead of 'api' to match standard query params if needed,
-        // but our bridge parses 'api' as the token key.
         const link = `${appBaseUrl}/api/bridge?api=${cleanToken}&url=${longUrl || '{url}'}&provider=${encodeURIComponent(cleanApiUrl)}`;
         setGeneratedLink(link);
     };
@@ -116,6 +114,19 @@ export default function ApiBuilderPage() {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
+
+    const copyKey = (key: string, id: string) => {
+        navigator.clipboard.writeText(key);
+        setCopiedKey(id);
+        setTimeout(() => setCopiedKey(null), 2000);
+    }
+
+    const copySiteUrl = () => {
+        const url = typeof window !== 'undefined' ? window.location.origin : '';
+        navigator.clipboard.writeText(url);
+        setCopiedSiteUrl(true);
+        setTimeout(() => setCopiedSiteUrl(false), 2000);
+    }
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -181,7 +192,10 @@ export default function ApiBuilderPage() {
                             providers.map((provider) => (
                                 <div key={provider._id} className="bg-white/5 border border-white/10 p-4 rounded-xl group hover:border-blue-500/30 transition-all">
                                     <div className="flex justify-between items-start mb-2">
-                                        <h3 className="font-bold text-white">{provider.name}</h3>
+                                        <h3 className="font-bold text-white flex items-center gap-2">
+                                            {provider.name}
+                                            <span className="px-2 py-0.5 bg-blue-900/50 text-blue-300 text-[10px] rounded-full">Bot Ready</span>
+                                        </h3>
                                         <button
                                             onClick={() => handleDeleteProvider(provider._id)}
                                             className="text-slate-600 hover:text-red-400 transition-colors"
@@ -189,12 +203,28 @@ export default function ApiBuilderPage() {
                                             <Trash2 className="w-4 h-4" />
                                         </button>
                                     </div>
-                                    <p className="text-xs text-slate-500 truncate mb-3">{provider.apiUrl}</p>
+
+                                    <div className="mb-3 space-y-2">
+                                        <div className="flex items-center gap-2 bg-black/40 p-2 rounded-lg border border-white/5">
+                                            <Key className="w-3 h-3 text-slate-500" />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[10px] text-slate-500 uppercase font-bold">Bot Token (Virtual Key)</p>
+                                                <code className="text-xs text-yellow-500 truncate block">{provider._id}</code>
+                                            </div>
+                                            <button
+                                                onClick={() => copyKey(provider._id, provider._id)}
+                                                className="text-slate-400 hover:text-white"
+                                            >
+                                                {copiedKey === provider._id ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                                            </button>
+                                        </div>
+                                    </div>
+
                                     <button
                                         onClick={() => loadProvider(provider)}
                                         className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
                                     >
-                                        <Zap className="w-3 h-3" /> Use This API
+                                        <Zap className="w-3 h-3" /> Fill Generator
                                     </button>
                                 </div>
                             ))
@@ -202,16 +232,52 @@ export default function ApiBuilderPage() {
                     </div>
                 </div>
 
-                {/* Right Column: Generator */}
-                <div className="lg:col-span-2">
+                {/* Right Column: Generator & Instructions */}
+                <div className="lg:col-span-2 space-y-6">
+
+                    {/* Bot Integration Guide */}
+                    <div className="bg-gradient-to-br from-blue-900/20 to-purple-900/20 border border-blue-500/20 rounded-3xl p-8 relative overflow-hidden">
+                        <div className="relative z-10">
+                            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                                <Globe className="w-5 h-5 text-blue-400" />
+                                How to Connect Your Bot
+                            </h2>
+                            <p className="text-slate-300 text-sm mb-6 leading-relaxed">
+                                To use this bridge with your Telegram bot, simply provide these details when the bot asks:
+                            </p>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="bg-black/40 p-4 rounded-xl border border-white/10">
+                                    <p className="text-xs font-bold text-slate-500 uppercase mb-1">1. Shortener Site URL</p>
+                                    <div className="flex gap-2">
+                                        <code className="flex-1 text-blue-300 text-sm font-mono truncate">
+                                            {typeof window !== 'undefined' ? window.location.origin : '...'}
+                                        </code>
+                                        <button onClick={copySiteUrl} className="text-slate-400 hover:text-white">
+                                            {copiedSiteUrl ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="bg-black/40 p-4 rounded-xl border border-white/10">
+                                    <p className="text-xs font-bold text-slate-500 uppercase mb-1">2. API Token</p>
+                                    <p className="text-slate-400 text-xs">
+                                        Use the <span className="text-yellow-500 font-mono">Bot Token (Virtual Key)</span> from the list on the left.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Generator */}
                     <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="p-3 bg-blue-600/20 rounded-xl">
                                 <Zap className="w-6 h-6 text-blue-400" />
                             </div>
                             <div>
-                                <h2 className="text-xl font-bold text-white">Smart Link Generator</h2>
-                                <p className="text-slate-400 text-sm">Generate a universal API link for your bots.</p>
+                                <h2 className="text-xl font-bold text-white">Manual Generator</h2>
+                                <p className="text-slate-400 text-sm">Generate a universal API link for manual use.</p>
                             </div>
                         </div>
 
@@ -225,11 +291,6 @@ export default function ApiBuilderPage() {
                                     placeholder="https://gplinks.com/api"
                                     className="w-full bg-black/50 border border-slate-700 text-white rounded-xl py-3 px-4 focus:border-blue-500 outline-none transition-all"
                                 />
-                                {apiUrl && !apiUrl.endsWith('/api') && !apiUrl.endsWith('v1') && (
-                                    <p className="text-yellow-500 text-xs flex items-center gap-1">
-                                        ⚠️ Warning: Most API URLs end in <code>/api</code>. Double check your provider.
-                                    </p>
-                                )}
                             </div>
 
                             <div className="space-y-2">
@@ -244,12 +305,12 @@ export default function ApiBuilderPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Test Destination URL (Optional)</label>
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Test Destination URL</label>
                                 <input
                                     type="text"
                                     value={longUrl}
                                     onChange={(e) => setLongUrl(e.target.value)}
-                                    placeholder="Leave blank to generate a template link for bots"
+                                    placeholder="Leave blank to generate a template link"
                                     className="w-full bg-black/50 border border-slate-700 text-white rounded-xl py-3 px-4 focus:border-blue-500 outline-none transition-all"
                                 />
                             </div>
@@ -276,10 +337,6 @@ export default function ApiBuilderPage() {
                                             {copied ? <Check className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
                                         </button>
                                     </div>
-                                    <p className="mt-4 text-xs text-slate-500 leading-relaxed">
-                                        <strong>How to use:</strong> Copy this link and use it in your Telegram bot or script.
-                                        Replace <code>{'{url}'}</code> with the actual long URL you want to shorten dynamically.
-                                    </p>
                                 </div>
                             )}
                         </div>

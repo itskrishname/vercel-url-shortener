@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { processBridgeRequest } from '@/lib/bridge';
+import dbConnect from '@/lib/db';
+import Provider from '@/models/Provider';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,52 +35,73 @@ async function handleAdapter(req: NextRequest) {
   };
 
   // The User sends:
-  // GET /api?api=FULL_BRIDGE_URL_WITH_PARAMS&url=LONG_URL
+  // GET /api?api=VIRTUAL_KEY_OR_URL&url=LONG_URL
 
-  // 1. Get 'api' param which contains the configured Bridge URL
-  const nestedApiUrlString = searchParams.get('api');
+  // 1. Get 'api' param
+  const apiParam = searchParams.get('api');
 
   // 2. Get 'url' param which is the destination
   const destinationUrl = searchParams.get('url');
 
-  if (!nestedApiUrlString) {
-      return NextResponse.json({ error: 'Missing "api" parameter containing the bridge URL.' }, { status: 400, headers });
-  }
-
-  // 3. Parse the nested URL to extract provider and key
-  let providerUrl = '';
-  let providerKey = '';
-
-  try {
-      const nestedUrl = new URL(nestedApiUrlString);
-      const nestedParams = nestedUrl.searchParams;
-
-      providerUrl = nestedParams.get('provider') || nestedParams.get('apiUrl') || '';
-      providerKey = nestedParams.get('key') || nestedParams.get('apiToken') || '';
-
-  } catch (e) {
-      return NextResponse.json({ error: 'Invalid "api" parameter. Must be a valid URL.' }, { status: 400, headers });
-  }
-
-  if (!providerUrl || !providerKey) {
-      // Try to fallback: maybe the user just sent the bridge URL and the params are on THIS request?
-      // Check if this request has provider/key
-      const fallbackProvider = searchParams.get('provider') || searchParams.get('apiUrl');
-      const fallbackKey = searchParams.get('key') || searchParams.get('apiToken');
-
-      if (fallbackProvider && fallbackKey) {
-          providerUrl = fallbackProvider;
-          providerKey = fallbackKey;
-      } else {
-          return NextResponse.json({
-              error: 'Could not extract "provider" or "key" from the "api" parameter URL, and they were not provided in the main request.',
-              received_api_param: nestedApiUrlString
-          }, { status: 400, headers });
-      }
+  if (!apiParam) {
+      return NextResponse.json({ error: 'Missing "api" parameter.' }, { status: 400, headers });
   }
 
   if (!destinationUrl) {
        return NextResponse.json({ error: 'Missing "url" parameter (destination).' }, { status: 400, headers });
+  }
+
+  // 3. Determine Provider Info
+  let providerUrl = '';
+  let providerKey = '';
+
+  // STRATEGY A: Check if 'api' param is a Database ID (Virtual Key)
+  if (!apiParam.includes('://')) {
+      try {
+          await dbConnect();
+          // Assuming 24-char hex string is a mongo id
+          if (apiParam.match(/^[0-9a-fA-F]{24}$/)) {
+              const provider = await Provider.findById(apiParam);
+              if (provider) {
+                  console.log(`[API Adapter] Found Saved Provider: ${provider.name}`);
+                  providerUrl = provider.apiUrl;
+                  providerKey = provider.apiToken;
+              }
+          }
+      } catch (e) {
+          console.error('[API Adapter] DB Lookup Error:', e);
+      }
+  }
+
+  // STRATEGY B: Fallback to Legacy Nested URL Parsing
+  // (If Strategy A failed or apiParam was a URL)
+  if (!providerUrl || !providerKey) {
+      if (apiParam.includes('://')) {
+          try {
+            const nestedUrl = new URL(apiParam);
+            const nestedParams = nestedUrl.searchParams;
+
+            providerUrl = nestedParams.get('provider') || nestedParams.get('apiUrl') || '';
+            providerKey = nestedParams.get('key') || nestedParams.get('apiToken') || '';
+            console.log('[API Adapter] Parsed nested URL strategy');
+          } catch (e) {
+            // Ignore
+          }
+      }
+  }
+
+  // STRATEGY C: Explicit Parameters in current request
+  if (!providerUrl || !providerKey) {
+      providerUrl = searchParams.get('provider') || searchParams.get('apiUrl') || '';
+      providerKey = searchParams.get('key') || searchParams.get('apiToken') || '';
+  }
+
+  // Final Validation
+  if (!providerUrl || !providerKey) {
+       return NextResponse.json({
+          error: 'Invalid Configuration.',
+          details: 'Could not resolve a Provider. Please use a valid Saved Provider ID (Virtual Key) in the "api" parameter, or provide "provider" and "key" parameters explicitly.',
+      }, { status: 400, headers });
   }
 
   // Ensure destination URL has protocol
