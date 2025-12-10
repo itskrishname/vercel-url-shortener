@@ -5,8 +5,7 @@ import { Zap, Copy, Check, Globe, Link as LinkIcon } from 'lucide-react';
 
 export default function ApiBuilderPage() {
   const [apiToolData, setApiToolData] = useState({
-      providerWebUrl: '',
-      providerUrl: '',
+      providerUrl: '', // This will now serve as the main URL (Web/API)
       providerKey: '',
   });
   const [generatedApiUrl, setGeneratedApiUrl] = useState('');
@@ -21,7 +20,7 @@ export default function ApiBuilderPage() {
   const generateApiString = () => {
       // We use window.location.origin to point to THIS app's bridge
       const baseUrl = `${origin}/api/bridge`;
-      // We encode the external provider's API URL and Key
+      // We use providerUrl for both the parameter and the "Web URL" display
       const finalUrl = `${baseUrl}?provider=${encodeURIComponent(apiToolData.providerUrl)}&key=${encodeURIComponent(apiToolData.providerKey)}&url=`;
       setGeneratedApiUrl(finalUrl);
   };
@@ -48,25 +47,13 @@ export default function ApiBuilderPage() {
            </div>
 
            <p className="text-sm text-slate-400 mb-6">
-               Enter the details of your external URL shortener service (e.g., GPLinks, Droplink) to generate a compatible bridge URL for your bots.
+               Enter the details of your external URL shortener service to generate a compatible bridge URL for your bots.
            </p>
 
            <div className="space-y-4">
-               {/* NEW FIELD: Provider Web URL */}
+               {/* Unified Provider URL */}
                <div className="space-y-1.5">
-                  <label className="text-xs text-slate-500 font-bold uppercase tracking-wider ml-1">Provider Web URL</label>
-                  <input
-                    type="url"
-                    placeholder="https://gplinks.com"
-                    className="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-sm text-white focus:ring-2 focus:ring-yellow-500/50 outline-none transition-all"
-                    value={apiToolData.providerWebUrl}
-                    onChange={(e) => setApiToolData({...apiToolData, providerWebUrl: e.target.value})}
-                  />
-                  <p className="text-[10px] text-slate-600 ml-1">The main website of the shortener service.</p>
-               </div>
-
-               <div className="space-y-1.5">
-                  <label className="text-xs text-slate-500 font-bold uppercase tracking-wider ml-1">Provider API URL</label>
+                  <label className="text-xs text-slate-500 font-bold uppercase tracking-wider ml-1">Provider URL</label>
                   <input
                     type="url"
                     placeholder="https://gplinks.com/api"
@@ -74,6 +61,7 @@ export default function ApiBuilderPage() {
                     value={apiToolData.providerUrl}
                     onChange={(e) => setApiToolData({...apiToolData, providerUrl: e.target.value})}
                   />
+                  <p className="text-[10px] text-slate-600 ml-1">The API endpoint or main website of the shortener service.</p>
                </div>
 
                <div className="space-y-1.5">
