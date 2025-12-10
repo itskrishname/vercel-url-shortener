@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Zap, Copy, Check, Globe, Link as LinkIcon } from 'lucide-react';
+import { Zap, Copy, Check, Globe, Link as LinkIcon, Edit2 } from 'lucide-react';
 
 export default function ApiBuilderPage() {
   const [apiToolData, setApiToolData] = useState({
@@ -13,14 +13,17 @@ export default function ApiBuilderPage() {
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    // Capture the base URL of the Vercel app
-    setOrigin(window.location.origin);
+    // Capture the base URL of the Vercel app only if not already set (allows editing)
+    if (!origin && typeof window !== 'undefined') {
+        setOrigin(window.location.origin);
+    }
   }, []);
 
   const generateApiString = () => {
-      // We use window.location.origin to point to THIS app's bridge
-      const baseUrl = `${origin}/api/bridge`;
-      // We use providerUrl for both the parameter and the "Web URL" display
+      // Ensure origin doesn't have a trailing slash
+      const cleanOrigin = origin.replace(/\/$/, '');
+      const baseUrl = `${cleanOrigin}/api/bridge`;
+
       const finalUrl = `${baseUrl}?provider=${encodeURIComponent(apiToolData.providerUrl)}&key=${encodeURIComponent(apiToolData.providerKey)}&url=`;
       setGeneratedApiUrl(finalUrl);
   };
@@ -73,6 +76,27 @@ export default function ApiBuilderPage() {
                     value={apiToolData.providerKey}
                     onChange={(e) => setApiToolData({...apiToolData, providerKey: e.target.value})}
                   />
+               </div>
+
+               {/* App Base URL - Now Editable */}
+               <div className="space-y-1.5 pt-4 border-t border-white/10">
+                  <label className="text-xs text-blue-400 font-bold uppercase tracking-wider ml-1 flex items-center gap-2">
+                      <Globe className="w-3 h-3" />
+                      App Base URL (Production)
+                  </label>
+                  <div className="relative">
+                      <input
+                        type="url"
+                        placeholder="https://your-app.vercel.app"
+                        className="w-full bg-slate-950/50 border border-blue-500/30 rounded-xl p-3 text-sm text-blue-100 focus:ring-2 focus:ring-blue-500/50 outline-none transition-all font-mono"
+                        value={origin}
+                        onChange={(e) => setOrigin(e.target.value)}
+                      />
+                      <Edit2 className="absolute right-3 top-3.5 w-4 h-4 text-slate-500 pointer-events-none" />
+                  </div>
+                  <p className="text-[10px] text-slate-500 ml-1">
+                      Ensure this is your <b>Production URL</b> (e.g. ends in .vercel.app), not a git-branch preview URL.
+                  </p>
                </div>
 
                <button

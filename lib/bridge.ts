@@ -53,6 +53,19 @@ export async function processBridgeRequest(providerUrl: string, providerKey: str
 
         const apiRes = await fetch(fetchUrl);
         const responseText = await apiRes.text();
+
+        // Check for common error pages (like Vercel Auth)
+        if (apiRes.status === 401 || responseText.includes('Log in with Vercel')) {
+             return {
+                status: 502,
+                data: {
+                    error: 'Bridge URL is unauthorized (401).',
+                    details: 'The provider URL seems to be protected (e.g., a Vercel Preview URL). Please check your Bridge URL configuration and ensure it points to a public Production URL.',
+                    provider_response: responseText.substring(0, 200) // Log first 200 chars
+                }
+            };
+        }
+
         const externalShortUrl = extractUrlFromResponse(responseText);
 
         if (!externalShortUrl || !externalShortUrl.startsWith('http')) {
