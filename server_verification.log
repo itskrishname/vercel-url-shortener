@@ -1530,3 +1530,92 @@ Require stack:
 }
  GET /_next/static/chunks/fallback/pages/_app.js 500 in 105ms
  GET /_next/static/chunks/fallback/pages/_error.js 500 in 105ms
+ ⨯ ./node_modules/next/dist/client/components/metadata/metadata-boundary.js
+Error: Failed to read source code from /app/node_modules/next/dist/client/components/metadata/metadata-boundary.js
+
+Caused by:
+    No such file or directory (os error 2)
+
+Import trace for requested module:
+./node_modules/next/dist/client/components/metadata/metadata-boundary.js
+ ⨯ ./node_modules/next/dist/client/components/metadata/metadata-boundary.js
+Error: Failed to read source code from /app/node_modules/next/dist/client/components/metadata/metadata-boundary.js
+
+Caused by:
+    No such file or directory (os error 2)
+
+Import trace for requested module:
+./node_modules/next/dist/client/components/metadata/metadata-boundary.js
+ ⨯ ./node_modules/next/dist/client/components/metadata/metadata-boundary.js
+Error: Failed to read source code from /app/node_modules/next/dist/client/components/metadata/metadata-boundary.js
+
+Caused by:
+    No such file or directory (os error 2)
+
+Import trace for requested module:
+./node_modules/next/dist/client/components/metadata/metadata-boundary.js
+ ⨯ ./node_modules/next/dist/client/components/metadata/metadata-boundary.js
+Error: Failed to read source code from /app/node_modules/next/dist/client/components/metadata/metadata-boundary.js
+
+Caused by:
+    No such file or directory (os error 2)
+
+Import trace for requested module:
+./node_modules/next/dist/client/components/metadata/metadata-boundary.js
+ ⨯ ./node_modules/next/dist/client/components/metadata/metadata-boundary.js
+Error: Failed to read source code from /app/node_modules/next/dist/client/components/metadata/metadata-boundary.js
+
+Caused by:
+    No such file or directory (os error 2)
+
+Import trace for requested module:
+./node_modules/next/dist/client/components/metadata/metadata-boundary.js
+ ⨯ ./node_modules/next/dist/client/components/metadata/metadata-boundary.js
+Error: Failed to read source code from /app/node_modules/next/dist/client/components/metadata/metadata-boundary.js
+
+Caused by:
+    No such file or directory (os error 2)
+
+Import trace for requested module:
+./node_modules/next/dist/client/components/metadata/metadata-boundary.js
+ ⨯ ./node_modules/next/dist/client/components/metadata/metadata-boundary.js
+Error: Failed to read source code from /app/node_modules/next/dist/client/components/metadata/metadata-boundary.js
+
+Caused by:
+    No such file or directory (os error 2)
+
+Import trace for requested module:
+./node_modules/next/dist/client/components/metadata/metadata-boundary.js
+ ⨯ ./node_modules/next/dist/client/components/metadata/metadata-boundary.js
+Error: Failed to read source code from /app/node_modules/next/dist/client/components/metadata/metadata-boundary.js
+
+Caused by:
+    No such file or directory (os error 2)
+
+Import trace for requested module:
+./node_modules/next/dist/client/components/metadata/metadata-boundary.js
+ ⨯ ./node_modules/next/dist/client/components/metadata/metadata-boundary.js
+Error: Failed to read source code from /app/node_modules/next/dist/client/components/metadata/metadata-boundary.js
+
+Caused by:
+    No such file or directory (os error 2)
+
+Import trace for requested module:
+./node_modules/next/dist/client/components/metadata/metadata-boundary.js
+ ⨯ ./node_modules/next/dist/client/components/metadata/metadata-boundary.js
+Error: Failed to read source code from /app/node_modules/next/dist/client/components/metadata/metadata-boundary.js
+
+Caused by:
+    No such file or directory (os error 2)
+
+Import trace for requested module:
+./node_modules/next/dist/client/components/metadata/metadata-boundary.js
+ ○ Compiling /login ...
+ ⨯ ./
+Module not found: Can't resolve 'next/dist/client/components/forbidden-error'
+
+https://nextjs.org/docs/messages/module-not-found
+ ⨯ ./
+Module not found: Can't resolve 'next/dist/client/components/forbidden-error'
+
+https://nextjs.org/docs/messages/module-not-found
