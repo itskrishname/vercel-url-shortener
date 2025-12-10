@@ -82,8 +82,9 @@ async function handleAdapter(req: NextRequest) {
   }
 
   // Ensure destination URL has protocol
-  if (!destinationUrl.startsWith('http://') && !destinationUrl.startsWith('https://')) {
-      destinationUrl = 'http://' + destinationUrl;
+  let finalDestination = destinationUrl;
+  if (!finalDestination.startsWith('http://') && !finalDestination.startsWith('https://')) {
+      finalDestination = 'http://' + finalDestination;
   }
 
   const host = req.headers.get('host') || 'localhost';
@@ -92,7 +93,7 @@ async function handleAdapter(req: NextRequest) {
   const result = await processBridgeRequest(
       providerUrl,
       providerKey,
-      destinationUrl,
+      finalDestination,
       host,
       protocol
   );
