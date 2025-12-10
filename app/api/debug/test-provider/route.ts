@@ -10,12 +10,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
     }
 
-    const separator = providerUrl.includes('?') ? '&' : '?';
+    // Ensure providerUrl has protocol
+    let cleanProviderUrl = providerUrl.trim();
+    if (!cleanProviderUrl.startsWith('http://') && !cleanProviderUrl.startsWith('https://')) {
+        cleanProviderUrl = 'https://' + cleanProviderUrl;
+    }
+
+    const separator = cleanProviderUrl.includes('?') ? '&' : '?';
     // Clean up dest URL just in case
     let finalDestUrl = testUrl;
     if (!finalDestUrl.startsWith('http')) finalDestUrl = 'http://' + finalDestUrl;
 
-    const fetchUrl = `${providerUrl}${separator}api=${apiKey}&url=${encodeURIComponent(finalDestUrl)}`;
+    const fetchUrl = `${cleanProviderUrl}${separator}api=${apiKey}&url=${encodeURIComponent(finalDestUrl)}`;
 
     console.log('[Debug Tool] Fetching:', fetchUrl);
 

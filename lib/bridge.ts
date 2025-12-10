@@ -45,6 +45,12 @@ export async function processBridgeRequest(providerUrl: string, providerKey: str
     }
 
     try {
+        // Ensure providerUrl has protocol
+        let cleanProviderUrl = providerUrl.trim();
+        if (!cleanProviderUrl.startsWith('http://') && !cleanProviderUrl.startsWith('https://')) {
+            cleanProviderUrl = 'https://' + cleanProviderUrl;
+        }
+
         // Function to perform the fetch
         const performFetch = async (url: string) => {
              const separator = url.includes('?') ? '&' : '?';
@@ -60,15 +66,15 @@ export async function processBridgeRequest(providerUrl: string, providerKey: str
         };
 
         // 1. Initial Call
-        let response = await performFetch(providerUrl);
+        let response = await performFetch(cleanProviderUrl);
 
         // 2. Auto-Correction Logic: If HTML response, try appending '/api'
         // Only try if the original URL didn't end in 'api' and response looks like HTML (dashboard)
-        if (response.text.trim().startsWith('<') && !providerUrl.endsWith('/api') && !providerUrl.endsWith('/api/')) {
+        if (response.text.trim().startsWith('<') && !cleanProviderUrl.endsWith('/api') && !cleanProviderUrl.endsWith('/api/')) {
             console.log('Bridge Logic: Received HTML. Attempting auto-correction by appending /api');
 
             // Remove trailing slash if exists
-            const baseUrl = providerUrl.replace(/\/$/, '');
+            const baseUrl = cleanProviderUrl.replace(/\/$/, '');
             const retryUrl = `${baseUrl}/api`;
 
             const retryResponse = await performFetch(retryUrl);
