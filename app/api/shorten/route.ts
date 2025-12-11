@@ -28,34 +28,35 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ status: 'error', message: 'Invalid API Key' }, { status: 401 });
     }
 
+    if (user.isSuspended) {
+      return NextResponse.json({ status: 'error', message: 'Account Suspended' }, { status: 403 });
+    }
+
     if (!user.external_api_token || !user.external_domain) {
       return NextResponse.json({ status: 'error', message: 'User external provider not configured' }, { status: 400 });
     }
 
     // 2. Generate Local Intermediate Link
-    const localToken = nanoid(8); // Short token for our /go/ route
+    const localToken = nanoid(8); // Short token for our /start/ route
     const baseUrl = getHostUrl(req);
-    const intermediateUrl = `${baseUrl}/go/${localToken}`;
+    // Use /start/ instead of /go/
+    const intermediateUrl = `${baseUrl}/start/${localToken}`;
 
     // 3. Call External Provider to shorten the INTERMEDIATE URL
-    // Assumption: Standard API format: https://domain.com/api?api=TOKEN&url=URL
-    // We try to make it robust.
-
-    // Construct External API URL
-    // Some users might input 'gplinks.com', others 'https://gplinks.com/api'
-    // We'll try to normalize or just use what they gave if it looks full.
-    // Given the screenshot said "Shortener Domain", it's likely just "gplinks.com".
-
     let externalApiEndpoint = user.external_domain;
     if (!externalApiEndpoint.startsWith('http')) {
       externalApiEndpoint = `https://${externalApiEndpoint}/api`;
     }
-    // If it doesn't end in /api (and isn't a full custom url), append it?
-    // Usually standard is /api. Let's assume standard for now.
+
+    // Check if domain includes /api or not if user just pasted domain.
+    // If user put 'gplinks.com', we made 'https://gplinks.com/api'.
+    // If user put 'https://gplinks.com/api', we are good.
+    // If user put 'gplinks.com/api', we need to fix protocol.
+    // We already handled non-http start.
 
     const externalCallUrl = new URL(externalApiEndpoint);
     externalCallUrl.searchParams.set('api', user.external_api_token);
-    externalCallUrl.searchParams.set('url', intermediateUrl); // We shorten OUR url
+    externalCallUrl.searchParams.set('url', intermediateUrl);
 
     const externalRes = await fetch(externalCallUrl.toString());
     const externalData = await externalRes.json().catch(() => null);
@@ -65,14 +66,10 @@ export async function GET(req: NextRequest) {
     if (externalData && externalData.shortenedUrl) {
       externalShortUrl = externalData.shortenedUrl;
     } else if (externalData && externalData.short) {
-       // Some apis return { short: '...' }
        externalShortUrl = externalData.short;
     } else {
-        // Fallback: Check if response text is a URL
-        // Or return error
-        // For now, let's log and fail if structured data is missing,
-        // or return the raw text if it looks like a url.
         console.error('External API Response invalid:', externalData);
+        // Fallback for debugging: if it returns text?
         return NextResponse.json({ status: 'error', message: 'External provider failed to return a short URL', debug: externalData }, { status: 502 });
     }
 
@@ -80,7 +77,7 @@ export async function GET(req: NextRequest) {
     const newLink = await Link.create({
       user: user._id,
       originalUrl: targetUrl,
-      localToken: localToken,
+      token: localToken,
       externalShortUrl: externalShortUrl
     });
 
@@ -88,7 +85,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       status: 'success',
       shortenedUrl: externalShortUrl,
-      original_url: targetUrl // Matches standard format often used
+      original_url: targetUrl
     });
 
   } catch (error: any) {

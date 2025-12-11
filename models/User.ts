@@ -31,6 +31,14 @@ const UserSchema = new Schema({
     type: String,
     default: '', // e.g., 'gplinks.com'
   },
+  // Suspension Logic
+  isSuspended: {
+    type: Boolean,
+    default: false,
+  },
+  suspendedAt: {
+    type: Date,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

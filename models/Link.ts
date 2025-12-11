@@ -10,8 +10,9 @@ const LinkSchema = new Schema({
     type: String,
     required: true,
   },
-  // The token for our intermediate redirect (e.g., /go/xyz)
-  localToken: {
+  // The token for our intermediate redirect (e.g., /start/xyz)
+  // Renamed from localToken to token to match existing DB index
+  token: {
     type: String,
     required: true,
     unique: true,

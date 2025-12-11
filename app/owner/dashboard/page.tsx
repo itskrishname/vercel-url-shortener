@@ -60,6 +60,50 @@ export default function OwnerDashboardPage() {
       alert('Copied: ' + text);
   }
 
+  const deleteUser = async (id: string, username: string) => {
+      if (!confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) return;
+
+      try {
+          const res = await fetch(`/api/owner/users?id=${id}`, { method: 'DELETE' });
+          if (res.ok) {
+              setUsers(users.filter(u => u._id !== id));
+          } else {
+              alert('Failed to delete user');
+          }
+      } catch (e) {
+          alert('Error deleting user');
+      }
+  }
+
+  const toggleSuspend = async (id: string, currentStatus: boolean) => {
+      const action = currentStatus ? 'unsuspend' : 'suspend';
+      const confirmMsg = currentStatus
+        ? 'Unsuspend this user?'
+        : 'Suspend this user? They will not be able to log in or generate links.';
+
+      if (!confirm(confirmMsg)) return;
+
+      try {
+          const res = await fetch('/api/owner/users', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id, action })
+          });
+          if (res.ok) {
+              setUsers(users.map(u => {
+                  if (u._id === id) {
+                      return { ...u, isSuspended: !currentStatus };
+                  }
+                  return u;
+              }));
+          } else {
+              alert('Failed to update status');
+          }
+      } catch (e) {
+          alert('Error updating status');
+      }
+  }
+
   if (loading) return <div className="p-10 text-center text-red-600">Loading Admin Console...</div>;
 
   return (
@@ -110,19 +154,41 @@ export default function OwnerDashboardPage() {
                                     <tr>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">API Key</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">External Domain</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {users.map((u) => (
-                                        <tr key={u._id}>
+                                        <tr key={u._id} className={u.isSuspended ? 'bg-red-50' : ''}>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{u.username}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">{u.app_api_key}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{u.external_domain}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(u.createdAt).toLocaleDateString()}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                {u.isSuspended ? (
+                                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Suspended</span>
+                                                ) : (
+                                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex space-x-3">
+                                                <button
+                                                    onClick={() => toggleSuspend(u._id, u.isSuspended)}
+                                                    className={`${u.isSuspended ? 'text-green-600 hover:text-green-900' : 'text-orange-600 hover:text-orange-900'}`}
+                                                >
+                                                    {u.isSuspended ? 'Unsuspend' : 'Suspend'}
+                                                </button>
+                                                <button
+                                                    onClick={() => deleteUser(u._id, u.username)}
+                                                    className="text-red-600 hover:text-red-900"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </td>
                                         </tr>
                                     ))}
+                                    {users.length === 0 && (
+                                        <tr><td colSpan={4} className="px-6 py-4 text-center text-gray-500">No users found.</td></tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>

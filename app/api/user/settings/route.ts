@@ -1,23 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
-import Link from '@/models/Link';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
-export async function GET(req: NextRequest) {
+export async function PUT(req: NextRequest) {
   try {
     await dbConnect();
 
     // Auth Check
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
-
-    if (!token) {
-        return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
+    if (!token) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
     let decoded: any;
     try {
@@ -26,22 +22,19 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ message: 'Invalid Token' }, { status: 401 });
     }
 
-    const user = await User.findById(decoded.id).select('-password');
-    if (!user) {
-        return NextResponse.json({ message: 'User not found' }, { status: 404 });
+    const body = await req.json();
+    const { external_api_token, external_domain } = body;
+
+    if (!external_api_token || !external_domain) {
+        return NextResponse.json({ message: 'Missing fields' }, { status: 400 });
     }
 
-    if (user.isSuspended) {
-         // Optionally return a specific status so frontend can force logout or show error
-         return NextResponse.json({ message: 'Account Suspended', suspended: true }, { status: 403 });
-    }
-
-    const links = await Link.find({ user: user._id }).sort({ createdAt: -1 });
-
-    return NextResponse.json({
-        user,
-        links
+    await User.findByIdAndUpdate(decoded.id, {
+        external_api_token,
+        external_domain
     });
+
+    return NextResponse.json({ status: 'success' });
 
   } catch (error) {
     console.error(error);
