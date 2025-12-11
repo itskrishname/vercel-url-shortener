@@ -34,21 +34,18 @@ async function handleAdapter(req: NextRequest) {
     'Access-Control-Allow-Origin': '*',
   };
 
-  // The User sends:
-  // GET /api?api=VIRTUAL_KEY_OR_URL&url=LONG_URL
-
-  // 1. Get 'api' param
-  const apiParam = searchParams.get('api');
+  // 1. Get 'api' param (case-insensitive)
+  const apiParam = searchParams.get('api') || searchParams.get('Api');
 
   // 2. Get 'url' param which is the destination
   const destinationUrl = searchParams.get('url');
 
   if (!apiParam) {
-      return NextResponse.json({ error: 'Missing "api" parameter.' }, { status: 400, headers });
+      return NextResponse.json({ status: 'error', message: 'Missing "api" parameter.' }, { status: 400, headers });
   }
 
   if (!destinationUrl) {
-       return NextResponse.json({ error: 'Missing "url" parameter (destination).' }, { status: 400, headers });
+       return NextResponse.json({ status: 'error', message: 'Missing "url" parameter (destination).' }, { status: 400, headers });
   }
 
   // 3. Determine Provider Info
@@ -99,8 +96,8 @@ async function handleAdapter(req: NextRequest) {
   // Final Validation
   if (!providerUrl || !providerKey) {
        return NextResponse.json({
-          error: 'Invalid Configuration.',
-          details: 'Could not resolve a Provider. Please use a valid Saved Provider ID (Virtual Key) in the "api" parameter, or provide "provider" and "key" parameters explicitly.',
+          status: 'error',
+          message: 'Invalid Configuration. Could not resolve a Provider.',
       }, { status: 400, headers });
   }
 
@@ -121,5 +118,21 @@ async function handleAdapter(req: NextRequest) {
       protocol
   );
 
-  return NextResponse.json(result.data, { status: result.status, headers });
+  // Transform result to match requested format:
+  // Success: { "status": "success", "shortenedUrl": "..." }
+  // Error: { "status": "error", "message": "..." }
+
+  if (result.status >= 200 && result.status < 300) {
+      return NextResponse.json({
+          status: 'success',
+          shortenedUrl: result.data.vercel_link
+      }, { status: 200, headers });
+  } else {
+      // Map existing error structure to new format
+      const errorMessage = result.data.error || 'An unknown error occurred.';
+      return NextResponse.json({
+          status: 'error',
+          message: errorMessage
+      }, { status: result.status, headers });
+  }
 }

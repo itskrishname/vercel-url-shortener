@@ -1,126 +1,84 @@
-# Universal Link Manager & Shortener
+# Token-Based URL Shortener (Vercel)
 
-A specialized URL shortener and redirector application built with Next.js (App Router), MongoDB, and Tailwind CSS. Designed to be hosted on Vercel.
+A clean, user-friendly URL shortener application designed to be hosted on Vercel. It features a "Bridge" system that allows you to manage multiple external URL shortener providers (like GPLinks, etc.) while providing a unified, token-based API for your bots or users.
 
 ## Features
 
-- **Admin Dashboard**: Secure login to manage links.
-- **External API Access**: Programmatic access to generate links from other applications or scripts.
-- **Dual-Layer Shortening**:
-  1. Input a Long URL and External API credentials (e.g., Adfly, Bitly).
-  2. Generates a local "Vercel Token" link (e.g., `your-app.vercel.app/start/xyz`).
-  3. User visits Vercel link -> Sees "Secret Bot Updates" Timer Page -> Redirects to External Short Link -> Destination.
-- **Cyberpunk UI**: A "Cyberpunk / Anime" aesthetic verification page with:
-  - Neon glowing elements.
-  - "BOT IS ONLINE" status.
-  - Interactive timer and animations.
-- **Bot Protection/Timer**:
-  - **10-Second Timer**: Visual countdown with rotating rings.
-  - **Auto Redirect**: Smooth transition after verification.
-- **Analytics**: Tracks generated links in MongoDB.
+*   **Cyberpunk-Themed UI:** A modern, responsive interface.
+*   **Admin Dashboard:** Secure login to manage generated links and configure external API providers.
+*   **Token-Based API:** A unified API endpoint that accepts a "Virtual Key" (Provider ID) and returns a short link.
+*   **Deep Link Management:** Wraps external short links with a local "Vercel" link to ensure traffic flows through your domain first.
+*   **Auto-Token Generation:** Automatically generates unique tokens for every link.
+*   **MongoDB Integration:** Stores all links and provider configurations.
 
-## Tech Stack
+## Deployment
 
-- **Framework**: Next.js 16 (App Router)
-- **Styling**: Tailwind CSS + Framer Motion
-- **Database**: MongoDB (Mongoose)
-- **Deployment**: Vercel
+### 1. Vercel Deployment
 
-## Environment Variables
+This application is optimized for Vercel.
 
-To run this application, you must set the following environment variables.
+1.  Push this code to a GitHub repository.
+2.  Import the project into Vercel.
+3.  **Environment Variables:** You must configure the `MONGODB_URI` environment variable in Vercel.
 
-Create a `.env.local` file in the root directory:
+### 2. Database Configuration
 
-```bash
-# This is the connection string for your specific MongoDB cluster
-MONGODB_URI=mongodb+srv://musicbhaikon9910:krishna@cluster0.cwvegmt.mongodb.net/
+You can use the following MongoDB connection string (as provided):
 
-# The base URL of your application (use your Vercel URL in production)
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+MONGODB_URI="mongodb+srv://musicbhaikon9910:krishna@cluster0.cwvegmt.mongodb.net/"
 ```
 
-## Local Development
+**Security Note:** It is highly recommended to use environment variables for sensitive credentials. In Vercel Project Settings > Environment Variables, add:
+*   Key: `MONGODB_URI`
+*   Value: `mongodb+srv://musicbhaikon9910:krishna@cluster0.cwvegmt.mongodb.net/` (Ensure you append the database name if needed, e.g., `/shortener`).
 
-1. **Install Dependencies**:
-   ```bash
-   npm install
-   ```
+### 3. Admin Credentials
 
-2. **Run Development Server**:
-   ```bash
-   npm run dev
-   ```
+*   **Login URL:** `/login`
+*   **Username:** `admin`
+*   **Password:** `admin12345`
 
-3. **Access the App**:
-   - Home/Admin Login: `http://localhost:3000/login`
-   - Dashboard: `http://localhost:3000/admin` (after login)
+## API Usage
 
-## Deployment on Vercel (Step-by-Step)
+The application provides an API endpoint compatible with bots expecting a specific format (similar to GPLinks).
 
-This application is optimized for Vercel. Follow these exact steps:
+**Endpoint:** `https://your-domain.vercel.app/api`
 
-1. **Push to GitHub**:
-   - Commit your code and push it to a new GitHub repository.
+**Request Parameters:**
 
-2. **Import to Vercel**:
-   - Go to [Vercel Dashboard](https://vercel.com/dashboard).
-   - Click **Add New** > **Project**.
-   - Select the GitHub repository you just created.
+*   `Api` (or `api`): The **Provider ID** (Virtual Key) from your Admin Dashboard. This tells the system which external shortener account to use.
+*   `url`: The destination URL you want to shorten.
 
-3. **Configure Environment Variables (Important!)**:
-   - On the deployment screen, look for the **"Environment Variables"** section.
-   - You **MUST** add the database connection string here for the app to work.
-   - **Key**: `MONGODB_URI`
-   - **Value**: `mongodb+srv://musicbhaikon9910:krishna@cluster0.cwvegmt.mongodb.net/`
-   - Click **Add**.
+**Example Request:**
+```http
+GET https://your-domain.vercel.app/api?Api=YOUR_PROVIDER_ID&url=https://destination.com
+```
 
-4. **Deploy**:
-   - Click the **Deploy** button.
-   - Wait for the build to complete.
-   - Once done, your URL shortener is live!
-
-## Admin Credentials
-
-- **Username**: `admin`
-- **Password**: `admin12345`
-
-## Usage Guide
-
-### 1. Dashboard (Manual)
-1. Log in to the `/login` page.
-2. Go to the Dashboard.
-3. Enter the **Original Long URL** (the final destination).
-4. Enter the **External API Config**:
-   - **API URL**: The base URL of the external shortener's API (e.g., `https://api.gplinks.com/api`).
-   - **API Token**: Your API key for that service.
-5. Click **Generate**.
-6. Share the generated **Vercel Token** link.
-
-### 2. External API (Programmatic)
-You can generate links programmatically from another script (e.g., a Telegram bot) using the API endpoint.
-
-**Endpoint:** `POST /api/generate`
-
-**Headers:**
-- `Content-Type`: `application/json`
-- `x-api-key`: `admin12345` (Use the admin password)
-
-**Body:**
+**Success Response:**
 ```json
 {
-  "longUrl": "https://example.com/destination",
-  "apiUrl": "https://external-shortener.com/api",
-  "apiToken": "YOUR_EXTERNAL_API_TOKEN"
+  "status": "success",
+  "shortenedUrl": "https://your-domain.vercel.app/start/TOKEN"
 }
 ```
 
-**Response:**
+**Error Response:**
 ```json
 {
-  "success": true,
-  "token": "x8s7d9f0",
-  "externalShortUrl": "https://short.com/xyz",
-  "vercelLink": "https://your-app.vercel.app/start/x8s7d9f0"
+  "status": "error",
+  "message": "Error description here"
 }
 ```
+
+## How it Works
+
+1.  **Configure a Provider:** Log in to the Admin Dashboard and add a new "API Provider" (e.g., your GPLinks account with its API URL and Token).
+2.  **Get the ID:** Copy the `_id` of the created provider.
+3.  **Use the API:** Send requests to `/api` using that `_id` as the `Api` token.
+4.  **Result:** The system will:
+    *   Call the external provider (e.g., GPLinks) to shorten the destination URL.
+    *   Save the external short link in the database.
+    *   Generate a local "Bridge" link (`/start/TOKEN`).
+    *   Return the local link.
+5.  **Visiting the Link:** When a user visits the local link, they see a loading screen (Bridge) which then redirects them to the external shortener, and finally to the destination.
