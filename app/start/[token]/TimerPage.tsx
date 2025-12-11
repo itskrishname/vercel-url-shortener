@@ -54,8 +54,8 @@ export default function TimerPage({
       <div
         className="absolute inset-0 z-0 opacity-60 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: 'url("https://images.unsplash.com/photo-1577009668386-857c0e86b026?q=80&w=2070&auto=format&fit=crop")',
-          filter: 'blur(2px) contrast(1.1) brightness(0.7)'
+          backgroundImage: 'url("/background.jpg")',
+          filter: 'blur(10px) contrast(1.1) brightness(0.7)'
         }}
       />
 

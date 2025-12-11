@@ -1,0 +1,17 @@
+
+> universal-shortener@0.1.0 dev
+> next dev -p 3003
+
+   ▲ Next.js 15.3.6
+   - Local:        http://localhost:3003
+   - Network:      http://192.168.0.2:3003
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 3.2s
+ ○ Compiling /test-ui-2 ...
+ ✓ Compiled /test-ui-2 in 7.4s (1508 modules)
+ GET /test-ui-2 200 in 8858ms
+ ✓ Compiled in 1412ms (725 modules)
+ ✓ Compiled in 1364ms (304 modules)
+ ✓ Compiled in 350ms (318 modules)
