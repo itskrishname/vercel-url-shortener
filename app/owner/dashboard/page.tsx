@@ -6,11 +6,11 @@ import { useRouter } from 'next/navigation';
 export default function OwnerDashboardPage() {
   const router = useRouter();
   const [users, setUsers] = useState<any[]>([]);
+  const [invites, setInvites] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('users'); // 'users' or 'invites'
 
   useEffect(() => {
-    // Check local storage flag for "Owner" auth (simple version)
-    // In a real app, we'd check a secure cookie.
     const isOwner = localStorage.getItem('isOwner');
     if (!isOwner) {
         router.push('/owner/login');
@@ -21,13 +21,16 @@ export default function OwnerDashboardPage() {
 
   const fetchData = async () => {
     try {
-        const res = await fetch('/api/owner/users');
-        if (res.status === 401) {
-            // If the API endpoint is protected, we might fail here.
-            // But since I haven't implemented a specific Owner API yet, I'll do it now.
-        }
-        const data = await res.json();
-        setUsers(data.users || []);
+        const [usersRes, invitesRes] = await Promise.all([
+            fetch('/api/owner/users'),
+            fetch('/api/owner/invites')
+        ]);
+
+        const usersData = await usersRes.json();
+        const invitesData = await invitesRes.json();
+
+        setUsers(usersData.users || []);
+        setInvites(invitesData.codes || []);
     } catch (e) {
         console.error(e);
     } finally {
@@ -35,9 +38,26 @@ export default function OwnerDashboardPage() {
     }
   };
 
+  const generateInvite = async () => {
+      try {
+          const res = await fetch('/api/owner/invites', { method: 'POST' });
+          const data = await res.json();
+          if (data.code) {
+              setInvites([data.code, ...invites]);
+          }
+      } catch (e) {
+          alert('Failed to generate code');
+      }
+  }
+
   const logout = () => {
       localStorage.removeItem('isOwner');
       router.push('/owner/login');
+  }
+
+  const copyToClipboard = (text: string) => {
+      navigator.clipboard.writeText(text);
+      alert('Copied: ' + text);
   }
 
   if (loading) return <div className="p-10 text-center text-red-600">Loading Admin Console...</div>;
@@ -61,36 +81,105 @@ export default function OwnerDashboardPage() {
       </nav>
 
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <h2 className="text-2xl font-bold mb-4 text-gray-800">Registered Users</h2>
 
-        <div className="flex flex-col">
-            <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-                <div className="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
-                    <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-red-50">
-                                <tr>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">API Key</th>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">External Domain</th>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                                {users.map((u) => (
-                                    <tr key={u._id}>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{u.username}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">{u.app_api_key}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{u.external_domain}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(u.createdAt).toLocaleDateString()}</td>
+        {/* Tabs */}
+        <div className="mb-6 border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+                <button
+                    onClick={() => setActiveTab('users')}
+                    className={`${activeTab === 'users' ? 'border-red-500 text-red-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                >
+                    Registered Users
+                </button>
+                <button
+                    onClick={() => setActiveTab('invites')}
+                    className={`${activeTab === 'invites' ? 'border-red-500 text-red-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                >
+                    Invite Codes
+                </button>
+            </nav>
+        </div>
+
+        {activeTab === 'users' && (
+            <div className="flex flex-col">
+                <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                    <div className="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+                        <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-red-50">
+                                    <tr>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">API Key</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">External Domain</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {users.map((u) => (
+                                        <tr key={u._id}>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{u.username}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">{u.app_api_key}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{u.external_domain}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(u.createdAt).toLocaleDateString()}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        )}
+
+        {activeTab === 'invites' && (
+             <div className="flex flex-col">
+                 <div className="mb-4">
+                     <button
+                        onClick={generateInvite}
+                        className="bg-red-600 text-white px-4 py-2 rounded shadow hover:bg-red-700 transition"
+                     >
+                         Generate New Code
+                     </button>
+                 </div>
+                <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                    <div className="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+                        <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-red-50">
+                                    <tr>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Used By</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {invites.map((code) => (
+                                        <tr key={code._id}>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{code.code}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                {code.isUsed ? (
+                                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Used</span>
+                                                ) : (
+                                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {code.usedBy ? code.usedBy.username : '-'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                <button onClick={() => copyToClipboard(code.code)} className="text-blue-600 hover:text-blue-900">Copy</button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
+
       </main>
     </div>
   );
