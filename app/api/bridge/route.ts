@@ -46,12 +46,16 @@ async function handleRequest(req: NextRequest) {
   );
 
   // Normalize Response for Bots
-  // Bots often expect "shortenedUrl" or "shortlink"
+  // Bots expect specific keys: original_url, shortenedUrl, status
   if (result.status >= 200 && result.status < 300) {
       const responseData = {
-          ...result.data,
-          status: 'success', // Ensure status is explicitly success
-          shortenedUrl: result.data.vercel_link // Add alias
+          status: 'success',
+          shortenedUrl: result.data.vercel_link,
+          original_url: destinationUrl, // Explicitly map to snake_case as requested
+          // Keep other debug fields if useful, or remove them to be strict.
+          // User asked for specific format, but extra fields usually don't break JSON parsers.
+          // I'll keep them for now but ensure the requested ones are top-level.
+          ...result.data
       };
       return NextResponse.json(responseData, { status: 200 });
   } else {

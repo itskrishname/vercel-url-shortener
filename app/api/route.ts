@@ -54,8 +54,6 @@ async function handleAdapter(req: NextRequest) {
 
   // STRATEGY A: Check if 'api' param is a Database ID (Virtual Key)
   if (apiParam && !apiParam.includes('://')) {
-      // Basic heuristic: MongoID is 24 hex chars.
-      // If the user provides a provider URL separately, they likely mean 'api' to be the raw key.
       const explicitProvider = searchParams.get('provider') || searchParams.get('apiUrl');
 
       if (!explicitProvider) {
@@ -93,10 +91,8 @@ async function handleAdapter(req: NextRequest) {
   }
 
   // STRATEGY C: Explicit Parameters in current request
-  // This handles the case where 'api' is passed as the raw token, and 'provider' is explicit.
   if (!providerUrl || !providerKey) {
       providerUrl = searchParams.get('provider') || searchParams.get('apiUrl') || '';
-      // If apiParam was not used as a Provider ID (Strategy A), we use it as the key here if 'key' is missing.
       providerKey = searchParams.get('key') || searchParams.get('apiToken') || apiParam || '';
   }
 
@@ -126,16 +122,13 @@ async function handleAdapter(req: NextRequest) {
   );
 
   // Transform result to match requested format:
-  // Success: { "status": "success", "shortenedUrl": "..." }
-  // Error: { "status": "error", "message": "..." }
-
   if (result.status >= 200 && result.status < 300) {
       return NextResponse.json({
           status: 'success',
-          shortenedUrl: result.data.vercel_link
+          shortenedUrl: result.data.vercel_link,
+          original_url: finalDestination, // Added field
       }, { status: 200, headers });
   } else {
-      // Map existing error structure to new format
       const errorMessage = result.data.error || 'An unknown error occurred.';
       return NextResponse.json({
           status: 'error',
