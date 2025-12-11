@@ -10,14 +10,19 @@ A specialized URL shortener and redirector application built with Next.js (App R
   1. Input a Long URL and External API credentials (e.g., Adfly, Bitly).
   2. Generates a local "Vercel Token" link (e.g., `your-app.vercel.app/start/xyz`).
   3. User visits Vercel link -> Sees "Secret Bot Updates" Timer Page -> Redirects to External Short Link -> Destination.
-- **Glassmorphism UI**: High-quality, responsive design for the public redirection page.
-- **Bot Protection/Timer**: 5-second countdown on the landing page before redirection.
+- **Cyberpunk UI**: A "Cyberpunk / Anime" aesthetic verification page with:
+  - Neon glowing elements.
+  - "BOT IS ONLINE" status.
+  - Interactive timer and animations.
+- **Bot Protection/Timer**:
+  - **10-Second Timer**: Visual countdown with rotating rings.
+  - **Auto Redirect**: Smooth transition after verification.
 - **Analytics**: Tracks generated links in MongoDB.
 
 ## Tech Stack
 
 - **Framework**: Next.js 16 (App Router)
-- **Styling**: Tailwind CSS
+- **Styling**: Tailwind CSS + Framer Motion
 - **Database**: MongoDB (Mongoose)
 - **Deployment**: Vercel
 
@@ -28,10 +33,12 @@ To run this application, you must set the following environment variables.
 Create a `.env.local` file in the root directory:
 
 ```bash
+# This is the connection string for your specific MongoDB cluster
 MONGODB_URI=mongodb+srv://musicbhaikon9910:krishna@cluster0.cwvegmt.mongodb.net/
-```
 
-> **Note**: The MongoDB URI is pre-configured as requested, but ensure the database user has correct permissions if issues arise.
+# The base URL of your application (use your Vercel URL in production)
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
 
 ## Local Development
 
@@ -49,18 +56,29 @@ MONGODB_URI=mongodb+srv://musicbhaikon9910:krishna@cluster0.cwvegmt.mongodb.net/
    - Home/Admin Login: `http://localhost:3000/login`
    - Dashboard: `http://localhost:3000/admin` (after login)
 
-## Deployment on Vercel
+## Deployment on Vercel (Step-by-Step)
 
-1. **Push to GitHub**: Commit and push this code to a GitHub repository.
+This application is optimized for Vercel. Follow these exact steps:
+
+1. **Push to GitHub**:
+   - Commit your code and push it to a new GitHub repository.
+
 2. **Import to Vercel**:
    - Go to [Vercel Dashboard](https://vercel.com/dashboard).
    - Click **Add New** > **Project**.
-   - Select your repository.
-3. **Configure Environment Variables**:
-   - In the "Environment Variables" section of the Vercel deployment screen, add:
-     - Key: `MONGODB_URI`
-     - Value: `mongodb+srv://musicbhaikon9910:krishna@cluster0.cwvegmt.mongodb.net/`
-4. **Deploy**: Click **Deploy**.
+   - Select the GitHub repository you just created.
+
+3. **Configure Environment Variables (Important!)**:
+   - On the deployment screen, look for the **"Environment Variables"** section.
+   - You **MUST** add the database connection string here for the app to work.
+   - **Key**: `MONGODB_URI`
+   - **Value**: `mongodb+srv://musicbhaikon9910:krishna@cluster0.cwvegmt.mongodb.net/`
+   - Click **Add**.
+
+4. **Deploy**:
+   - Click the **Deploy** button.
+   - Wait for the build to complete.
+   - Once done, your URL shortener is live!
 
 ## Admin Credentials
 
@@ -95,18 +113,6 @@ You can generate links programmatically from another script (e.g., a Telegram bo
   "apiUrl": "https://external-shortener.com/api",
   "apiToken": "YOUR_EXTERNAL_API_TOKEN"
 }
-```
-
-**Example (cURL):**
-```bash
-curl -X POST https://your-app.vercel.app/api/generate \
-  -H "Content-Type: application/json" \
-  -H "x-api-key: admin12345" \
-  -d '{
-    "longUrl": "https://google.com",
-    "apiUrl": "https://example-shortener.com/api",
-    "apiToken": "123456"
-  }'
 ```
 
 **Response:**

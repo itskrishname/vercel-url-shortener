@@ -2,35 +2,16 @@
 > universal-shortener@0.1.0 dev
 > next dev
 
-   ▲ Next.js 16.0.8 (Turbopack)
-   - Local:         http://localhost:3000
-   - Network:       http://192.168.0.2:3000
+ ⚠ Port 3000 is in use, using available port 3002 instead.
+   ▲ Next.js 15.3.6
+   - Local:        http://localhost:3002
+   - Network:      http://192.168.0.2:3002
    - Environments: .env.local
 
  ✓ Starting...
- ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
- ✓ Ready in 2.8s
-Received API Key: admin12345
-Expected: admin12345
-Fetching external shortener: https://is.gd/create.php?format=simple&api=dummy_token&url=https%3A%2F%2Fgoogle.com
-External API Response: https://is.gd/jAxBiv
- POST /api/generate 200 in 6.5s (compile: 1539ms, render: 4.9s)
-Bridge: Fetching external: https://is.gd/create.php?format=simple&api=dummy&url=https%3A%2F%2Fexample.com
- GET /api/bridge?provider=https://is.gd/create.php?format=simple&key=dummy&url=https://example.com 200 in 3.2s (compile: 1056ms, render: 2.1s)
-
------
-[1m[31mFATAL[39m[0m: An unexpected Turbopack error occurred. A panic log has been written to /tmp/next-panic-8981d31ea39346026b4f634a5a171423.log.
-
-To help make Turbopack better, report this error by clicking here: https://github.com/vercel/next.js/discussions/new?category=turbopack-error-report&title=Turbopack%20Error%3A%20Next.js%20package%20not%20found&body=Turbopack%20version%3A%20%60b1a04a84%60%0ANext.js%20version%3A%20%600.0.0%60%0A%0AError%20message%3A%0A%60%60%60%0ATurbopack%20Error%3A%20Next.js%20package%20not%20found%0A%60%60%60&labels=Turbopack,Turbopack%20Panic%20Backtrace
------
-
-Error: Turbopack build failed with 1 errors:
-./app
-Error: Next.js inferred your workspace root, but it may not be correct.
-    We couldn't find the Next.js package (next/package.json) from the project directory: /app/app
-     To fix this, set turbopack.root in your Next.js config, or ensure the Next.js package is resolvable from this directory.
-    Note: For security and performance reasons, files outside of the project directory will not be compiled.
-    See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
-
-    at ignore-listed frames
-[?25h
+ ✓ Ready in 3.8s
+ ○ Compiling /test-ui ...
+ ✓ Compiled /test-ui in 13.9s (1526 modules)
+ GET /test-ui 200 in 15295ms
+ ✓ Compiled in 1364ms (725 modules)
+ ✓ Compiled in 809ms (304 modules)
