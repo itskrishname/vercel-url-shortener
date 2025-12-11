@@ -1,11 +1,28 @@
-import { NextRequest, NextResponse } from 'next/server';
+import jwt from 'jsonwebtoken';
+import { NextRequest } from 'next/server';
 
-export const ADMIN_CREDENTIALS = {
-  username: 'admin',
-  password: 'admin12345',
-};
+const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-change-this';
 
-export function isAuthenticated(req: NextRequest): boolean {
-  const authCookie = req.cookies.get('admin_session');
-  return authCookie?.value === 'true';
+export interface TokenPayload {
+  userId: string;
+  username: string;
+  role: string;
+}
+
+export function signToken(payload: TokenPayload): string {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+}
+
+export function verifyToken(token: string): TokenPayload | null {
+  try {
+    return jwt.verify(token, JWT_SECRET) as TokenPayload;
+  } catch (error) {
+    return null;
+  }
+}
+
+export function getUserFromRequest(req: NextRequest): TokenPayload | null {
+  const token = req.cookies.get('token')?.value;
+  if (!token) return null;
+  return verifyToken(token);
 }

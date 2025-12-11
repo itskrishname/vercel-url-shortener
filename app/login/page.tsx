@@ -2,123 +2,87 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, User, ArrowRight, Loader2 } from 'lucide-react';
-import Link from 'next/link';
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const [formData, setFormData] = useState({
+    username: '',
+    password: '',
+  });
+  const [error, setError] = useState('');
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
 
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify(formData),
       });
 
-      if (res.ok) {
-        // router.refresh() is unnecessary here because we are doing a full navigation
-        // and it might be causing the perceived delay.
-        router.push('/admin');
-      } else {
-        setError('Invalid username or password');
-        setLoading(false);
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Login failed');
       }
-    } catch (err) {
-      setError('Connection error. Please try again.');
-      setLoading(false);
+
+      if (data.role === 'admin') {
+         // Should not happen on this page if we separate them, but good fallback
+         router.push('/owner/dashboard');
+      } else {
+         router.push('/dashboard');
+      }
+
+    } catch (err: any) {
+      setError(err.message);
     }
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4 font-sans relative overflow-hidden">
-      {/* Background Elements */}
-      <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-purple-900/20 rounded-full blur-[120px] pointer-events-none animate-pulse" />
-      <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-blue-900/20 rounded-full blur-[120px] pointer-events-none animate-pulse" style={{ animationDelay: '2s' }} />
-
-      {/* Glass Card */}
-      <div className="relative z-10 w-full max-w-md bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
-        <div className="flex justify-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-900/20">
-            <Lock className="w-8 h-8 text-white" />
+    <div className="min-h-screen flex items-center justify-center bg-purple-50 p-4">
+      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <h1 className="text-2xl font-bold mb-2 text-center text-gray-800">Login</h1>
+        <p className="text-center text-gray-500 mb-6">Access your dashboard</p>
+        {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Username</label>
+            <input
+              type="text"
+              required
+              placeholder="Enter username"
+              className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+              value={formData.username}
+              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+            />
           </div>
-        </div>
-
-        <h1 className="text-3xl font-bold text-center text-white mb-2">Welcome Back</h1>
-        <p className="text-slate-400 text-center mb-8 text-sm">Enter your credentials to access the dashboard</p>
-
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/20 text-red-200 p-3 rounded-xl mb-6 text-center text-sm flex items-center justify-center gap-2 animate-in fade-in slide-in-from-top-2">
-            <span className="w-1.5 h-1.5 bg-red-500 rounded-full" />
-            {error}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Password</label>
+            <input
+              type="password"
+              required
+              placeholder="Enter password"
+              className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            />
           </div>
-        )}
-
-        <form onSubmit={handleLogin} className="space-y-5">
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">Username</label>
-            <div className="relative">
-              <User className="absolute left-4 top-3.5 w-5 h-5 text-slate-500" />
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-slate-900/50 border border-slate-700 text-white rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all placeholder:text-slate-600"
-                placeholder="admin"
-              />
-            </div>
+          <div className="flex items-center">
+            <input type="checkbox" className="h-4 w-4 text-purple-600 border-gray-300 rounded" />
+            <label className="ml-2 block text-sm text-gray-900">Remember me for 7 days</label>
           </div>
-
-          <div className="space-y-1.5">
-             <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">Password</label>
-            <div className="relative">
-              <Lock className="absolute left-4 top-3.5 w-5 h-5 text-slate-500" />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-slate-900/50 border border-slate-700 text-white rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all placeholder:text-slate-600"
-                placeholder="••••••••"
-              />
-            </div>
-          </div>
-
           <button
             type="submit"
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-lg shadow-blue-900/20 flex justify-center items-center gap-2 mt-4 disabled:opacity-70 disabled:cursor-not-allowed group"
+            className="w-full bg-purple-600 text-white p-2 rounded-md hover:bg-purple-700 transition"
           >
-            {loading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Signing In...
-              </>
-            ) : (
-              <>
-                Access Dashboard
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </>
-            )}
+            Login
           </button>
         </form>
-
-        <div className="mt-8 text-center">
-            <Link href="/" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">
-                &larr; Back to Home
-            </Link>
+        <div className="mt-4 text-center text-sm">
+          Don't have an account? <a href="/register" className="text-blue-600 hover:underline">Register</a> | <a href="/owner/login" className="text-blue-600 hover:underline">Owner Login</a>
         </div>
-      </div>
-
-      <div className="absolute bottom-6 text-slate-600 text-xs">
-        Secured by Admin Protocol
       </div>
     </div>
   );

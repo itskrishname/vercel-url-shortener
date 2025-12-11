@@ -26,3 +26,27 @@ Bridge Logic: Fetching external: https://gplinks.com/api?api=21aaeb55bffd061323a
  ✓ Compiled /api/bridge in 2.1s (91 modules)
 Bridge Logic: Fetching external: https://gplinks.com/api?api=21aaeb55bffd061323a98157ceb6057e31cc3392&url=https%3A%2F%2Fexample.com
  GET /api/bridge?api=21aaeb55bffd061323a98157ceb6057e31cc3392&url=https%3A%2F%2Fexample.com&provider=https%3A%2F%2Fgplinks.com%2Fapi 200 in 4119ms
+ ✓ Compiled in 4s (279 modules)
+ ✓ Compiled in 581ms (279 modules)
+ ✓ Compiled in 33ms
+ ✓ Compiled in 1066ms (279 modules)
+ ✓ Compiled in 446ms (279 modules)
+ ✓ Compiled in 403ms (279 modules)
+ ✓ Compiled in 273ms (279 modules)
+ ✓ Compiled in 678ms (279 modules)
+ ✓ Compiled in 226ms (279 modules)
+ ✓ Compiled in 269ms (279 modules)
+ ✓ Compiled in 150ms (279 modules)
+ ✓ Compiled in 200ms (279 modules)
+ ✓ Compiled in 232ms (279 modules)
+ ✓ Compiled in 768ms (279 modules)
+ ✓ Compiled in 255ms (279 modules)
+ ✓ Compiled in 320ms (277 modules)
+ ✓ Compiled in 155ms (277 modules)
+ ✓ Compiled in 202ms (277 modules)
+ ✓ Compiled in 146ms (277 modules)
+ ✓ Compiled in 206ms (277 modules)
+ ✓ Compiled in 305ms (277 modules)
+ ✓ Compiled in 160ms (277 modules)
+ ✓ Compiled in 277ms (277 modules)
+[?25h

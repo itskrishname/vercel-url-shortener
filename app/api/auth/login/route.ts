@@ -1,25 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ADMIN_CREDENTIALS } from '@/lib/auth';
+import dbConnect from '@/lib/db';
+import User from '@/models/User';
+import bcrypt from 'bcryptjs';
+import { signToken } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { username, password } = body;
+    await dbConnect();
+    const { username, password } = await req.json();
 
-    if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
-      const response = NextResponse.json({ success: true });
-      response.cookies.set('admin_session', 'true', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax', // Changed from 'strict' to 'lax' for better navigation compatibility
-        path: '/',
-        maxAge: 60 * 60 * 24 * 7, // 1 week
-      });
-      return response;
+    const user = await User.findOne({ username });
+    if (!user) {
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    return NextResponse.json({ success: false, message: 'Invalid credentials' }, { status: 401 });
-  } catch (error) {
-    return NextResponse.json({ success: false, message: 'Error' }, { status: 500 });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    }
+
+    const token = signToken({
+      userId: user._id.toString(),
+      username: user.username,
+      role: user.role,
+    });
+
+    const response = NextResponse.json({ message: 'Login successful', role: user.role });
+    response.cookies.set('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
+    });
+
+    return response;
+  } catch (error: any) {
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

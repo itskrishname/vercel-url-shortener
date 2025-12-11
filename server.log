@@ -1,17 +1,10 @@
 
-> universal-shortener@0.1.0 dev
-> next dev
+> universal-shortener@0.1.0 start
+> next start
 
- ⚠ Port 3000 is in use, using available port 3002 instead.
    ▲ Next.js 15.3.6
-   - Local:        http://localhost:3002
-   - Network:      http://192.168.0.2:3002
-   - Environments: .env.local
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.0.2:3000
 
  ✓ Starting...
- ✓ Ready in 3.8s
- ○ Compiling /test-ui ...
- ✓ Compiled /test-ui in 13.9s (1526 modules)
- GET /test-ui 200 in 15295ms
- ✓ Compiled in 1364ms (725 modules)
- ✓ Compiled in 809ms (304 modules)
+ ✓ Ready in 678ms
