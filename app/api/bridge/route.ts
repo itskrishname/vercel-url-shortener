@@ -17,7 +17,8 @@ async function handleRequest(req: NextRequest) {
 
   // Get params from Query String (priority) or JSON body (if POST)
   let providerUrl = searchParams.get('provider') || searchParams.get('apiUrl');
-  let providerKey = searchParams.get('key') || searchParams.get('apiToken');
+  // Support 'api' as an alias for 'key' / 'apiToken' to match common bot formats
+  let providerKey = searchParams.get('key') || searchParams.get('apiToken') || searchParams.get('api');
   let destinationUrl = searchParams.get('url') || searchParams.get('destination');
 
   // If POST, try to read body for missing params
@@ -25,7 +26,7 @@ async function handleRequest(req: NextRequest) {
     try {
       const body = await req.json();
       if (!providerUrl) providerUrl = body.provider || body.apiUrl;
-      if (!providerKey) providerKey = body.key || body.apiToken;
+      if (!providerKey) providerKey = body.key || body.apiToken || body.api;
       if (!destinationUrl) destinationUrl = body.url || body.destination;
     } catch (e) {
       // Ignore json parse error
@@ -44,5 +45,21 @@ async function handleRequest(req: NextRequest) {
       protocol
   );
 
-  return NextResponse.json(result.data, { status: result.status });
+  // Normalize Response for Bots
+  // Bots often expect "shortenedUrl" or "shortlink"
+  if (result.status >= 200 && result.status < 300) {
+      const responseData = {
+          ...result.data,
+          status: 'success', // Ensure status is explicitly success
+          shortenedUrl: result.data.vercel_link // Add alias
+      };
+      return NextResponse.json(responseData, { status: 200 });
+  } else {
+      // Ensure error format is consistent
+      return NextResponse.json({
+          status: 'error',
+          message: result.data.error || 'An error occurred',
+          ...result.data
+      }, { status: result.status });
+  }
 }

@@ -40,8 +40,8 @@ async function handleAdapter(req: NextRequest) {
   // 2. Get 'url' param which is the destination
   const destinationUrl = searchParams.get('url');
 
-  if (!apiParam) {
-      return NextResponse.json({ status: 'error', message: 'Missing "api" parameter.' }, { status: 400, headers });
+  if (!apiParam && !searchParams.get('key')) {
+      return NextResponse.json({ status: 'error', message: 'Missing "api" or "key" parameter.' }, { status: 400, headers });
   }
 
   if (!destinationUrl) {
@@ -53,27 +53,32 @@ async function handleAdapter(req: NextRequest) {
   let providerKey = '';
 
   // STRATEGY A: Check if 'api' param is a Database ID (Virtual Key)
-  if (!apiParam.includes('://')) {
-      try {
-          await dbConnect();
-          // Assuming 24-char hex string is a mongo id
-          if (apiParam.match(/^[0-9a-fA-F]{24}$/)) {
-              const provider = await Provider.findById(apiParam);
-              if (provider) {
-                  console.log(`[API Adapter] Found Saved Provider: ${provider.name}`);
-                  providerUrl = provider.apiUrl;
-                  providerKey = provider.apiToken;
+  if (apiParam && !apiParam.includes('://')) {
+      // Basic heuristic: MongoID is 24 hex chars.
+      // If the user provides a provider URL separately, they likely mean 'api' to be the raw key.
+      const explicitProvider = searchParams.get('provider') || searchParams.get('apiUrl');
+
+      if (!explicitProvider) {
+          try {
+              await dbConnect();
+              // Assuming 24-char hex string is a mongo id
+              if (apiParam.match(/^[0-9a-fA-F]{24}$/)) {
+                  const provider = await Provider.findById(apiParam);
+                  if (provider) {
+                      console.log(`[API Adapter] Found Saved Provider: ${provider.name}`);
+                      providerUrl = provider.apiUrl;
+                      providerKey = provider.apiToken;
+                  }
               }
+          } catch (e) {
+              console.error('[API Adapter] DB Lookup Error:', e);
           }
-      } catch (e) {
-          console.error('[API Adapter] DB Lookup Error:', e);
       }
   }
 
   // STRATEGY B: Fallback to Legacy Nested URL Parsing
-  // (If Strategy A failed or apiParam was a URL)
   if (!providerUrl || !providerKey) {
-      if (apiParam.includes('://')) {
+      if (apiParam && apiParam.includes('://')) {
           try {
             const nestedUrl = new URL(apiParam);
             const nestedParams = nestedUrl.searchParams;
@@ -88,9 +93,11 @@ async function handleAdapter(req: NextRequest) {
   }
 
   // STRATEGY C: Explicit Parameters in current request
+  // This handles the case where 'api' is passed as the raw token, and 'provider' is explicit.
   if (!providerUrl || !providerKey) {
       providerUrl = searchParams.get('provider') || searchParams.get('apiUrl') || '';
-      providerKey = searchParams.get('key') || searchParams.get('apiToken') || '';
+      // If apiParam was not used as a Provider ID (Strategy A), we use it as the key here if 'key' is missing.
+      providerKey = searchParams.get('key') || searchParams.get('apiToken') || apiParam || '';
   }
 
   // Final Validation

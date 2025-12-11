@@ -1,0 +1,23 @@
+
+> universal-shortener@0.1.0 dev
+> next dev
+
+ ⚠ Port 3000 is in use, using available port 3005 instead.
+   ▲ Next.js 15.3.6
+   - Local:        http://localhost:3005
+   - Network:      http://192.168.0.2:3005
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1973ms
+ ○ Compiling /api/bridge ...
+ ✓ Compiled /api/bridge in 3.4s (370 modules)
+Bridge Logic: Fetching external: https://gplinks.com/api?api=21aaeb55bffd061323a98157ceb6057e31cc3392&url=https%3A%2F%2Fexample.com
+ GET /api/bridge?api=21aaeb55bffd061323a98157ceb6057e31cc3392&url=https%3A%2F%2Fexample.com&provider=https%3A%2F%2Fgplinks.com%2Fapi 200 in 4998ms
+ ○ Compiling /api ...
+ ✓ Compiled /api in 1245ms (373 modules)
+[API Adapter] Incoming request: http://localhost:3005/api?api=21aaeb55bffd061323a98157ceb6057e31cc3392&url=https%3A%2F%2Fexample.com&provider=https%3A%2F%2Fgplinks.com%2Fapi
+Bridge Logic: Fetching external: https://gplinks.com/api?api=21aaeb55bffd061323a98157ceb6057e31cc3392&url=https%3A%2F%2Fexample.com
+ GET /api?api=21aaeb55bffd061323a98157ceb6057e31cc3392&url=https%3A%2F%2Fexample.com&provider=https%3A%2F%2Fgplinks.com%2Fapi 200 in 3740ms
+Bridge Logic: Fetching external: https://gplinks.com/api?api=21aaeb55bffd061323a98157ceb6057e31cc3392&url=https%3A%2F%2Fexample.com
+ GET /api/bridge?api=21aaeb55bffd061323a98157ceb6057e31cc3392&url=https%3A%2F%2Fexample.com&provider=https%3A%2F%2Fgplinks.com%2Fapi 200 in 469ms
