@@ -11,12 +11,17 @@ function getHostUrl(req: NextRequest) {
   return `${protocol}://${host}`;
 }
 
-function isValidUrl(string: string) {
+// Relaxed normalization: Prepend https:// if missing
+function normalizeUrl(string: string) {
+  let urlStr = string.trim();
+  if (!/^https?:\/\//i.test(urlStr)) {
+    urlStr = 'https://' + urlStr;
+  }
   try {
-    const url = new URL(string);
-    return url.protocol === 'http:' || url.protocol === 'https:';
+    const url = new URL(urlStr);
+    return url.toString(); // Returns fully qualified URL
   } catch (_) {
-    return false;
+    return null; // Invalid URL even after prepending
   }
 }
 
@@ -26,20 +31,22 @@ export async function GET(req: NextRequest) {
     await dbConnect();
     const { searchParams } = new URL(req.url);
     const apiKey = searchParams.get('api');
-    const targetUrl = searchParams.get('url');
+    let targetUrl = searchParams.get('url');
 
     // 1. Basic Validation
     if (!apiKey || !targetUrl) {
       return NextResponse.json({ status: 'error', message: 'Missing api or url parameter' }, { status: 400 });
     }
 
-    // STRICT URL VALIDATION to prevent upstream errors/timeouts
-    if (!isValidUrl(targetUrl)) {
+    // NORMALIZE URL (Fixing the 400 error for 'google.com' or 'testing')
+    const normalizedUrl = normalizeUrl(targetUrl);
+    if (!normalizedUrl) {
         return NextResponse.json({
             status: 'error',
-            message: 'Invalid URL format. URL must start with http:// or https://'
+            message: 'Invalid URL format. Please provide a valid domain (e.g., google.com)'
         }, { status: 400 });
     }
+    targetUrl = normalizedUrl;
 
     // 2. Authenticate User
     const user = await User.findOne({ app_api_key: apiKey });
@@ -134,7 +141,6 @@ export async function GET(req: NextRequest) {
         externalData = JSON.parse(responseText);
     } catch (e) {
         console.error('[API] Failed to parse external JSON:', e);
-        // If status is 200 but JSON is invalid, it's likely an HTML page (like Cloudflare challenge or 404)
         return NextResponse.json({
             status: 'error',
             message: 'External Provider returned invalid JSON. Check your settings or the provider status.',
@@ -158,11 +164,11 @@ export async function GET(req: NextRequest) {
         }, { status: 502 });
     }
 
-    // 5. Save Link
+    // 5. Save Link (Saving the NORMALIZED url)
     try {
         const newLink = await Link.create({
           user: user._id,
-          originalUrl: targetUrl,
+          originalUrl: targetUrl, // Saved normalized URL
           localToken: localToken,
           token: localToken,
           externalShortUrl: externalShortUrl
