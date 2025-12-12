@@ -65,7 +65,43 @@ export async function GET(req: NextRequest) {
 
     console.log('[API] User authenticated:', user.username);
 
-    // 3. Generate Local Intermediate Link
+    // 3. Generate Local Intermediate Link (Vercel Link) FIRST
+    // We do this first because the user wants the Vercel link to be the one that is shortened by the external provider.
+    // Wait, the requirement is: "vercel ka link banaega jo ke the wheeling pay redirect correct I mean Jo API Diya hoga API se jo link banaa hoga use per redirect Karega"
+    // Translation: "Make a Vercel link that redirects to the link created by the API"
+    // Flow:
+    // 1. Generate Local Token (Vercel Link).
+    // 2. Call External API to shorten the ORIGINAL URL. (Wait, let me re-read carefully).
+
+    /*
+       "lekin yah ek redirection page jo ki Mere diye hue shortness ke ling Jo generate karta hai usse pahle apna ek khud ka ek vercel ka link banaega jo ke the wheeling pay redirect correct I mean Jo API Diya hoga API se jo link banaa hoga use per redirect Karega"
+
+       Interpretation:
+       User visits Vercel Link -> Redirect Page -> External Short Link -> Original URL.
+
+       Current Code Flow:
+       1. Generate Local Token (Vercel Link).
+       2. Call External API with ORIGINAL URL.
+       3. Save (Original URL, Local Token, External Short Link).
+       4. Return Vercel Link.
+
+       Redirect Flow:
+       User -> Vercel Link (/start/token) -> Page -> Redirects to External Short Link -> Redirects to Original URL.
+
+       This matches the requirement.
+
+       Issue: "External provider failed: URL is invalid."
+       This means `targetUrl` sent to the external provider is rejected.
+       We are sending `normalizedUrl` which is `https://google.com`.
+       Some providers might require `http://` or might be picky about encoding.
+       We are using `encodeURIComponent(targetUrl)`. This is correct.
+
+       Maybe the user is using a provider that requires the URL to be passed differently?
+       Most standard copy-paste scripts use `url={url}`.
+
+       Let's ensure we are stripping trailing slashes from the API endpoint correctly.
+    */
+
     let localToken;
     let isUnique = false;
     let retries = 0;
@@ -99,12 +135,15 @@ export async function GET(req: NextRequest) {
     }
 
     let apiUrl = '';
+    // Intelligent handling of API endpoint construction
     if (externalApiEndpoint.endsWith('/api') || externalApiEndpoint.endsWith('/api/')) {
          apiUrl = `https://${externalApiEndpoint.replace(/\/$/, '')}`;
     } else {
+         // Default convention: domain.com -> domain.com/api
          apiUrl = `https://${externalApiEndpoint.replace(/\/$/, '')}/api`;
     }
 
+    // Note: We use the NORMALIZED targetUrl here.
     const externalCallUrl = `${apiUrl}?api=${user.external_api_token}&url=${encodeURIComponent(targetUrl)}`;
     console.log('[API] Calling External Provider:', externalCallUrl.replace(user.external_api_token, '***'));
 
@@ -150,10 +189,15 @@ export async function GET(req: NextRequest) {
 
     let externalShortUrl = '';
 
+    // Handle various response formats
     if (externalData && externalData.shortenedUrl) {
       externalShortUrl = externalData.shortenedUrl;
     } else if (externalData && externalData.short) {
        externalShortUrl = externalData.short;
+    } else if (externalData && externalData.url) {
+       externalShortUrl = externalData.url; // Some use 'url'
+    } else if (externalData && externalData.link) {
+       externalShortUrl = externalData.link; // Some use 'link'
     } else {
         console.error('External API Response invalid format:', externalData);
         const providerMsg = externalData.message || externalData.msg || externalData.error || 'No error message provided';

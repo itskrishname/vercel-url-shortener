@@ -26,6 +26,22 @@ body {
   overflow-x: hidden;
 }
 
+/* GOD MODE UTILITIES */
+.god-glow-text {
+  text-shadow: 0 0 10px rgba(189, 0, 255, 0.5), 0 0 20px rgba(189, 0, 255, 0.3);
+}
+
+.god-glow-box {
+  box-shadow: 0 0 20px rgba(189, 0, 255, 0.2), inset 0 0 20px rgba(189, 0, 255, 0.05);
+}
+
+.god-grid-bg {
+  background-image:
+    linear-gradient(rgba(0, 243, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(189, 0, 255, 0.1) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
 /* Glassmorphism Utilities */
 .glass {
   background: var(--glass-bg);
