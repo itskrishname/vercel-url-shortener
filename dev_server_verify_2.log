@@ -19,3 +19,10 @@
  GET /register 200 in 1550ms
  ✓ Compiled /start/[token] in 399ms (771 modules)
  GET /start/fake_token_123 404 in 4868ms
+ ✓ Compiled in 4.7s (334 modules)
+ ✓ Compiled in 1649ms (751 modules)
+ ✓ Compiled in 491ms (334 modules)
+ ✓ Compiled in 312ms (334 modules)
+ ○ Compiling /owner/login ...
+ ✓ Compiled /owner/login in 818ms (772 modules)
+ GET /owner/login 200 in 1314ms

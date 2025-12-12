@@ -41,7 +41,8 @@ export async function GET(req: NextRequest) {
     console.log('[API] User authenticated:', user.username);
 
     // 2. Generate Local Intermediate Link
-    const localToken = nanoid(8);
+    // Increase length to 10 to reduce collision chance
+    const localToken = nanoid(10);
     if (!localToken) {
         throw new Error('Failed to generate local token');
     }
@@ -109,10 +110,17 @@ export async function GET(req: NextRequest) {
         });
         console.log('[API] Link Saved:', newLink._id);
     } catch (dbError: any) {
-        console.error('[API] DB Save Error:', dbError);
-        // Handle Duplicate Key explicitly
+        console.error('[API] DB Save Error Full:', dbError);
+
         if (dbError.code === 11000) {
-             return NextResponse.json({ status: 'error', message: 'Internal Collision (Duplicate Token). Please try again.' }, { status: 500 });
+             // Log the duplicate key to debug
+             console.error('[API] Duplicate Key Error Keys:', dbError.keyValue);
+             // If localToken collided, we could retry, but for now just tell user.
+             return NextResponse.json({
+                 status: 'error',
+                 message: 'Internal Collision (Duplicate Token). Please try again.',
+                 debug: dbError.keyValue
+             }, { status: 500 });
         }
         throw dbError;
     }
