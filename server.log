@@ -50,3 +50,43 @@ CastError: Cast to ObjectId failed for value "admin-static-id" (type string) at 
     28 |     },
   valueType: 'string'
 }
+ ✓ Compiled in 11.3s (338 modules)
+ ✓ Compiled in 824ms (338 modules)
+ GET /owner/login 200 in 292ms
+ POST /api/auth/login 200 in 53ms
+ GET /owner/dashboard 200 in 52ms
+ ○ Compiling /dashboard/tools ...
+ GET /api/owner/users 200 in 1232ms
+ ✓ Compiled /dashboard/tools in 1199ms (882 modules)
+ GET /api/owner/invites 200 in 1589ms
+ GET /api/owner/users 200 in 634ms
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /dashboard/tools 200 in 2088ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 2.2s (886 modules)
+ ✓ Compiled /api/user/me in 423ms (565 modules)
+CastError: Cast to ObjectId failed for value "admin-static-id" (type string) at path "_id" for model "User"
+    at async GET (app/api/user/me/route.ts:25:17)
+  23 |     }
+  24 |
+> 25 |     const user = await User.findById(decoded.userId).select('-password');
+     |                 ^
+  26 |     if (!user) {
+  27 |         return NextResponse.json({ message: 'User not found' }, { status: 404 });
+  28 |     } {
+  stringValue: '"admin-static-id"',
+  messageFormat: undefined,
+  kind: 'ObjectId',
+  value: 'admin-static-id',
+  path: '_id',
+  reason: BSONError: input must be a 24 character hex string, 12 byte Uint8Array, or an integer
+      at async GET (app/api/user/me/route.ts:25:17)
+    23 |     }
+    24 |
+  > 25 |     const user = await User.findById(decoded.userId).select('-password');
+       |                 ^
+    26 |     if (!user) {
+    27 |         return NextResponse.json({ message: 'User not found' }, { status: 404 });
+    28 |     },
+  valueType: 'string'
+}
