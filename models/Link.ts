@@ -10,12 +10,17 @@ const LinkSchema = new Schema({
     type: String,
     required: true,
   },
-  // The token for our intermediate redirect (e.g., /start/xyz)
-  // Renamed from token to localToken to match existing DB index
+  // We use localToken for our app logic
   localToken: {
     type: String,
     required: true,
     unique: true,
+  },
+  // We also explicitly define 'token' because the existing DB has a unique index on 'token'.
+  // If we don't define it and populate it, it might default to null, causing collision.
+  token: {
+    type: String,
+    required: false, // Not strictly required by logic, but required by DB index to be unique
   },
   // The final short URL provided by the external service
   externalShortUrl: {
@@ -30,7 +35,7 @@ const LinkSchema = new Schema({
     type: Date,
     default: Date.now,
   },
-});
+}, { strict: false }); // Allow other fields just in case
 
 const Link = models.Link || model('Link', LinkSchema);
 

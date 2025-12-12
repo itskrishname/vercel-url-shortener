@@ -41,7 +41,6 @@ export async function GET(req: NextRequest) {
     console.log('[API] User authenticated:', user.username);
 
     // 2. Generate Local Intermediate Link
-    // Increase length to 10 to reduce collision chance
     const localToken = nanoid(10);
     if (!localToken) {
         throw new Error('Failed to generate local token');
@@ -100,12 +99,15 @@ export async function GET(req: NextRequest) {
     }
 
     // 4. Save Link
+    // KEY FIX: We save 'localToken' AND 'token' with the same value.
+    // This satisfies the new 'localToken' index AND the old 'token' index (preventing null collision).
     console.log('[API] Saving Link to DB...');
     try {
         const newLink = await Link.create({
           user: user._id,
           originalUrl: targetUrl,
           localToken: localToken,
+          token: localToken, // <--- Saving to 'token' as well to satisfy old index
           externalShortUrl: externalShortUrl
         });
         console.log('[API] Link Saved:', newLink._id);
@@ -113,9 +115,7 @@ export async function GET(req: NextRequest) {
         console.error('[API] DB Save Error Full:', dbError);
 
         if (dbError.code === 11000) {
-             // Log the duplicate key to debug
              console.error('[API] Duplicate Key Error Keys:', dbError.keyValue);
-             // If localToken collided, we could retry, but for now just tell user.
              return NextResponse.json({
                  status: 'error',
                  message: 'Internal Collision (Duplicate Token). Please try again.',
@@ -126,6 +126,8 @@ export async function GET(req: NextRequest) {
     }
 
     // 5. Return Result
+    // The user requested a specific JSON format response.
+    // "original_url", "shortenedUrl", "status": "success"
     return NextResponse.json({
       status: 'success',
       shortenedUrl: vercelShortLink,

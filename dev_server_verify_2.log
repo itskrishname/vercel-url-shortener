@@ -26,3 +26,6 @@
  ○ Compiling /owner/login ...
  ✓ Compiled /owner/login in 818ms (772 modules)
  GET /owner/login 200 in 1314ms
+ ✓ Compiled in 5.2s (336 modules)
+ ✓ Compiled in 484ms (336 modules)
+ GET /owner/login 200 in 160ms
