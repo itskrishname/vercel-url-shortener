@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
 import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'secret';
+import { verifyToken } from '@/lib/auth';
 
 export async function PUT(req: NextRequest) {
   try {
@@ -15,10 +13,8 @@ export async function PUT(req: NextRequest) {
     const token = cookieStore.get('token')?.value;
     if (!token) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
-    let decoded: any;
-    try {
-        decoded = jwt.verify(token, JWT_SECRET);
-    } catch (e) {
+    const decoded = verifyToken(token);
+    if (!decoded) {
         return NextResponse.json({ message: 'Invalid Token' }, { status: 401 });
     }
 
@@ -29,7 +25,7 @@ export async function PUT(req: NextRequest) {
         return NextResponse.json({ message: 'Missing fields' }, { status: 400 });
     }
 
-    await User.findByIdAndUpdate(decoded.id, {
+    await User.findByIdAndUpdate(decoded.userId, {
         external_api_token,
         external_domain
     });

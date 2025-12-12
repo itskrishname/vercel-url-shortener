@@ -3,9 +3,7 @@ import dbConnect from '@/lib/db';
 import User from '@/models/User';
 import Link from '@/models/Link';
 import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'secret';
+import { verifyToken } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,20 +17,17 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    let decoded: any;
-    try {
-        decoded = jwt.verify(token, JWT_SECRET);
-    } catch (e) {
+    const decoded = verifyToken(token);
+    if (!decoded) {
         return NextResponse.json({ message: 'Invalid Token' }, { status: 401 });
     }
 
-    const user = await User.findById(decoded.id).select('-password');
+    const user = await User.findById(decoded.userId).select('-password');
     if (!user) {
         return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
 
     if (user.isSuspended) {
-         // Optionally return a specific status so frontend can force logout or show error
          return NextResponse.json({ message: 'Account Suspended', suspended: true }, { status: 403 });
     }
 
