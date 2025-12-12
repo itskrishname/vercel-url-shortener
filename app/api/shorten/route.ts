@@ -39,24 +39,19 @@ export async function GET(req: NextRequest) {
     // 2. Generate Local Intermediate Link
     const localToken = nanoid(8); // Short token for our /start/ route
     const baseUrl = getHostUrl(req);
-    // Use /start/ instead of /go/
-    const intermediateUrl = `${baseUrl}/start/${localToken}`;
+    // Vercel link that the user will share
+    const vercelShortLink = `${baseUrl}/start/${localToken}`;
 
-    // 3. Call External Provider to shorten the INTERMEDIATE URL
+    // 3. Call External Provider to shorten the ORIGINAL URL (Destination)
+    // The flow is: User -> Vercel Link (/start/token) -> External Short Link -> Original Destination
     let externalApiEndpoint = user.external_domain;
     if (!externalApiEndpoint.startsWith('http')) {
       externalApiEndpoint = `https://${externalApiEndpoint}/api`;
     }
 
-    // Check if domain includes /api or not if user just pasted domain.
-    // If user put 'gplinks.com', we made 'https://gplinks.com/api'.
-    // If user put 'https://gplinks.com/api', we are good.
-    // If user put 'gplinks.com/api', we need to fix protocol.
-    // We already handled non-http start.
-
     const externalCallUrl = new URL(externalApiEndpoint);
     externalCallUrl.searchParams.set('api', user.external_api_token);
-    externalCallUrl.searchParams.set('url', intermediateUrl);
+    externalCallUrl.searchParams.set('url', targetUrl); // Shorten the destination, not the Vercel link
 
     const externalRes = await fetch(externalCallUrl.toString());
     const externalData = await externalRes.json().catch(() => null);
@@ -69,22 +64,23 @@ export async function GET(req: NextRequest) {
        externalShortUrl = externalData.short;
     } else {
         console.error('External API Response invalid:', externalData);
-        // Fallback for debugging: if it returns text?
         return NextResponse.json({ status: 'error', message: 'External provider failed to return a short URL', debug: externalData }, { status: 502 });
     }
 
     // 4. Save Link
-    const newLink = await Link.create({
+    // Saving localToken matching the schema change
+    await Link.create({
       user: user._id,
       originalUrl: targetUrl,
-      token: localToken,
+      localToken: localToken,
       externalShortUrl: externalShortUrl
     });
 
     // 5. Return Result
+    // Return the Vercel link so the user shares *that*
     return NextResponse.json({
       status: 'success',
-      shortenedUrl: externalShortUrl,
+      shortenedUrl: vercelShortLink,
       original_url: targetUrl
     });
 

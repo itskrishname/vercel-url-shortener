@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
 
 // Use environment variable or fallback to the provided connection string as requested
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://musicbhaikon9910:krishna@cluster0.cwvegmt.mongodb.net/";
+// Updated to the new connection string provided by the user
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://Krishna:krishna@cluster0.ecime.mongodb.net/";
 
 if (!MONGODB_URI) {
   throw new Error(
