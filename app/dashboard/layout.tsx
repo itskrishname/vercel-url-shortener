@@ -50,7 +50,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Floating Sidebar (Glass) */}
       <aside className="w-full md:w-72 p-4 md:p-6 flex flex-col z-20 sticky top-0 md:h-screen">
-        <div className="glass h-full rounded-2xl flex flex-col overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.5)] relative border border-white/5 backdrop-blur-xl bg-black/40">
+        <div className="glass h-full rounded-2xl flex flex-col overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.5)] relative border border-white/5 backdrop-blur-xl bg-black/80">
              {/* Decorative gradient blob inside sidebar */}
              <div className="absolute top-0 left-0 w-full h-48 bg-purple-600/10 blur-[50px] -z-10"></div>
              <div className="absolute bottom-0 right-0 w-full h-48 bg-blue-600/10 blur-[50px] -z-10"></div>

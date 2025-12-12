@@ -1,10 +1,52 @@
 
-> universal-shortener@0.1.0 start
-> next start
+> universal-shortener@0.1.0 dev
+> next dev
 
+ ⚠ Port 3000 is in use, using available port 3004 instead.
    ▲ Next.js 15.3.6
-   - Local:        http://localhost:3000
-   - Network:      http://192.168.0.2:3000
+   - Local:        http://localhost:3004
+   - Network:      http://192.168.0.2:3004
 
  ✓ Starting...
- ✓ Ready in 1285ms
+ ✓ Ready in 2.8s
+ ○ Compiling /owner/login ...
+ ✓ Compiled /owner/login in 5.2s (705 modules)
+ ✓ Compiled in 1138ms (324 modules)
+ GET /owner/login 200 in 6425ms
+ ○ Compiling /api/auth/login ...
+ ✓ Compiled /api/auth/login in 1855ms (794 modules)
+ POST /api/auth/login 200 in 4078ms
+ ✓ Compiled /owner/dashboard in 390ms (801 modules)
+ GET /owner/dashboard 200 in 509ms
+ ○ Compiling /dashboard/links ...
+ ✓ Compiled /dashboard/links in 1651ms (880 modules)
+ GET /api/owner/users 200 in 2178ms
+ GET /api/owner/invites 200 in 2180ms
+ GET /dashboard/links 200 in 2191ms
+ ○ Compiling /api/user/me ...
+ ✓ Compiled /api/user/me in 834ms (890 modules)
+CastError: Cast to ObjectId failed for value "admin-static-id" (type string) at path "_id" for model "User"
+    at async GET (app/api/user/me/route.ts:25:17)
+  23 |     }
+  24 |
+> 25 |     const user = await User.findById(decoded.userId).select('-password');
+     |                 ^
+  26 |     if (!user) {
+  27 |         return NextResponse.json({ message: 'User not found' }, { status: 404 });
+  28 |     } {
+  stringValue: '"admin-static-id"',
+  messageFormat: undefined,
+  kind: 'ObjectId',
+  value: 'admin-static-id',
+  path: '_id',
+  reason: BSONError: input must be a 24 character hex string, 12 byte Uint8Array, or an integer
+      at async GET (app/api/user/me/route.ts:25:17)
+    23 |     }
+    24 |
+  > 25 |     const user = await User.findById(decoded.userId).select('-password');
+       |                 ^
+    26 |     if (!user) {
+    27 |         return NextResponse.json({ message: 'User not found' }, { status: 404 });
+    28 |     },
+  valueType: 'string'
+}

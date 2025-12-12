@@ -41,30 +41,44 @@ export async function GET(req: NextRequest) {
     console.log('[API] User authenticated:', user.username);
 
     // 2. Generate Local Intermediate Link
-    const localToken = nanoid(10);
-    if (!localToken) {
-        throw new Error('Failed to generate local token');
+    let localToken;
+    let isUnique = false;
+    let retries = 0;
+
+    // Retry logic to ensure uniqueness and non-null token
+    while (!isUnique && retries < 3) {
+        localToken = nanoid(10);
+        const existing = await Link.findOne({ localToken });
+        if (!existing) {
+            isUnique = true;
+        } else {
+            retries++;
+        }
     }
+
+    if (!localToken || !isUnique) {
+        throw new Error('Failed to generate unique token after retries');
+    }
+
     const baseUrl = getHostUrl(req);
     const vercelShortLink = `${baseUrl}/start/${localToken}`;
     console.log('[API] Generated Local Token:', localToken);
 
     // 3. Call External Provider
     let externalApiEndpoint = user.external_domain;
-    if (!externalApiEndpoint.startsWith('http')) {
-      externalApiEndpoint = `https://${externalApiEndpoint}/api`;
-    }
+    // Basic sanitization
+    externalApiEndpoint = externalApiEndpoint.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
-    const externalCallUrl = new URL(externalApiEndpoint);
-    externalCallUrl.searchParams.set('api', user.external_api_token);
-    externalCallUrl.searchParams.set('url', targetUrl);
+    // Construct external API URL (assuming standard format like gplinks/droplink)
+    // Most support: https://domain.com/api?api=KEY&url=URL
+    const externalCallUrl = `https://${externalApiEndpoint}/api?api=${user.external_api_token}&url=${encodeURIComponent(targetUrl)}`;
 
-    console.log('[API] Calling External Provider:', externalCallUrl.toString());
+    console.log('[API] Calling External Provider:', externalCallUrl.replace(user.external_api_token, '***'));
 
-    const externalRes = await fetch(externalCallUrl.toString(), {
+    const externalRes = await fetch(externalCallUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*'
+        'Accept': 'application/json'
       }
     });
 
@@ -115,7 +129,6 @@ export async function GET(req: NextRequest) {
         console.error('[API] DB Save Error Full:', dbError);
 
         if (dbError.code === 11000) {
-             console.error('[API] Duplicate Key Error Keys:', dbError.keyValue);
              return NextResponse.json({
                  status: 'error',
                  message: 'Internal Collision (Duplicate Token). Please try again.',
@@ -127,7 +140,6 @@ export async function GET(req: NextRequest) {
 
     // 5. Return Result
     // The user requested a specific JSON format response.
-    // "original_url", "shortenedUrl", "status": "success"
     return NextResponse.json({
       status: 'success',
       shortenedUrl: vercelShortLink,
@@ -138,8 +150,7 @@ export async function GET(req: NextRequest) {
     console.error('[API] Critical Shorten API Error:', error);
     return NextResponse.json({
         status: 'error',
-        message: error.message || 'Internal Server Error',
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        message: error.message || 'Internal Server Error'
     }, { status: 500 });
   }
 }

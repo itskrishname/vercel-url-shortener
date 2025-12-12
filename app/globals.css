@@ -12,6 +12,7 @@
 }
 
 body {
+  background-color: #000000; /* Explicit Black Fallback */
   background: var(--background);
   color: var(--foreground);
   /* Cyberpunk Grid Background */

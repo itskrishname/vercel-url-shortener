@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 function getVercelLink(token: string) {
+  if (typeof window === 'undefined') return '';
   return `${window.location.origin}/start/${token}`;
 }
 
@@ -15,10 +17,13 @@ export default function LinksPage() {
     fetch('/api/links')
         .then((res) => res.json())
         .then((data) => {
-            if (data.status === 'success') {
+            if (data.status === 'success' && Array.isArray(data.links)) {
                 setLinks(data.links);
+            } else {
+                setLinks([]);
             }
         })
+        .catch(() => setLinks([]))
         .finally(() => setLoading(false));
   };
 
@@ -67,10 +72,10 @@ export default function LinksPage() {
           </div>
       </div>
 
-      <div className="glass-card rounded-2xl overflow-hidden border border-white/5">
+      <div className="glass-card rounded-2xl overflow-hidden border border-white/5 bg-black/40">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-white/10">
-                <thead className="bg-black/20">
+                <thead className="bg-black/40">
                     <tr>
                         <th className="px-6 py-4 text-left text-xs font-bold text-purple-300 uppercase tracking-wider">Original URL</th>
                         <th className="px-6 py-4 text-left text-xs font-bold text-purple-300 uppercase tracking-wider">Short Link</th>
