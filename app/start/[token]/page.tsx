@@ -4,8 +4,14 @@ import { notFound } from 'next/navigation';
 
 async function getLink(token: string) {
   await dbConnect();
-  // Updated to find by localToken instead of token
-  const link = await LinkModel.findOne({ localToken: token });
+  // Support both new (localToken) and legacy (token) links
+  const link = await LinkModel.findOne({
+    $or: [
+      { localToken: token },
+      { token: token }
+    ]
+  });
+
   if (!link) return null;
 
   // Async update visit count
@@ -27,7 +33,8 @@ export default async function StartPage({ params }: { params: Promise<{ token: s
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-black font-sans relative overflow-hidden">
       {/* Background Cyberpunk Elements */}
-      <div className="absolute inset-0 bg-[url('/background.jpg')] bg-cover bg-center opacity-20 filter blur-sm"></div>
+      <div className="absolute inset-0 god-grid-bg opacity-30"></div>
+      <div className="absolute inset-0 bg-[url('/background.jpg')] bg-cover bg-center opacity-10 filter blur-sm mix-blend-overlay"></div>
 
       {/* Animated Orbs */}
       <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-600 rounded-full mix-blend-screen filter blur-[100px] opacity-60 animate-pulse"></div>
