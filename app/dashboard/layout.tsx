@@ -46,51 +46,68 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row font-sans text-gray-100">
+    <div className="min-h-screen flex flex-col md:flex-row font-sans text-gray-100 selection:bg-purple-500 selection:text-white">
 
       {/* Floating Sidebar (Glass) */}
-      <aside className="w-full md:w-72 p-4 md:p-6 flex flex-col">
-        <div className="glass h-full rounded-2xl flex flex-col overflow-hidden shadow-2xl relative">
+      <aside className="w-full md:w-72 p-4 md:p-6 flex flex-col z-20 sticky top-0 md:h-screen">
+        <div className="glass h-full rounded-2xl flex flex-col overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.5)] relative border border-white/5 backdrop-blur-xl bg-black/40">
              {/* Decorative gradient blob inside sidebar */}
-             <div className="absolute top-0 left-0 w-full h-32 bg-purple-600/20 blur-3xl -z-10"></div>
+             <div className="absolute top-0 left-0 w-full h-48 bg-purple-600/10 blur-[50px] -z-10"></div>
+             <div className="absolute bottom-0 right-0 w-full h-48 bg-blue-600/10 blur-[50px] -z-10"></div>
 
-            <div className="h-20 flex items-center px-6 border-b border-white/5">
-                <div className="w-8 h-8 rounded bg-gradient-to-br from-purple-500 to-blue-500 mr-3 shadow-[0_0_15px_rgba(168,85,247,0.5)]"></div>
-                <h1 className="text-xl font-bold tracking-wide text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">NEXUS<span className="text-purple-400">LINK</span></h1>
+            <div className="h-24 flex items-center px-6 border-b border-white/5">
+                <div className="relative group">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg blur opacity-25 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+                    <div className="relative w-10 h-10 rounded-lg bg-black flex items-center justify-center border border-white/10">
+                         <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                    </div>
+                </div>
+                <div className="ml-3">
+                    <h1 className="text-xl font-black tracking-wider text-white">NEXUS<span className="text-purple-500">LINK</span></h1>
+                    <p className="text-[10px] text-gray-400 tracking-[0.2em] uppercase">Universal Bridge</p>
+                </div>
             </div>
 
-            <div className="flex-1 p-4 overflow-y-auto">
-                <div className="mb-6 px-2">
-                    <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">Account</p>
-                    <div className="glass-card p-3 rounded-xl flex items-center space-x-3 mb-2 bg-white/5">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-gray-700 to-gray-600 flex items-center justify-center text-sm font-bold border border-white/10">
-                            {user?.username?.charAt(0).toUpperCase() || 'U'}
+            <div className="flex-1 p-4 overflow-y-auto custom-scrollbar">
+                <div className="mb-8 px-2">
+                    <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-3 pl-1">User Profile</p>
+                    <div className="glass-card p-3 rounded-xl flex items-center space-x-3 mb-2 bg-gradient-to-r from-white/5 to-transparent border border-white/5 hover:border-white/20 transition-colors">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 p-[2px]">
+                            <div className="w-full h-full rounded-full bg-black flex items-center justify-center text-sm font-bold">
+                                {user?.username?.charAt(0).toUpperCase() || 'U'}
+                            </div>
                         </div>
                         <div className="overflow-hidden">
-                            <p className="text-sm font-medium text-white truncate">{user?.username || 'Loading...'}</p>
-                            <div className="flex items-center">
-                                <span className="w-2 h-2 rounded-full bg-green-500 mr-1 shadow-[0_0_5px_#22c55e]"></span>
-                                <p className="text-xs text-gray-400">Online</p>
+                            <p className="text-sm font-bold text-white truncate">{user?.username || 'Loading...'}</p>
+                            <div className="flex items-center mt-0.5">
+                                <span className="relative flex h-2 w-2 mr-1.5">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                </span>
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">System Online</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <nav className="space-y-2">
-                    <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold px-2 mb-2">Menu</p>
+                <nav className="space-y-1">
+                    <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold px-3 mb-2">Main Menu</p>
                     {navItems.map((item) => {
                         const isActive = pathname === item.href;
                         return (
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className={`flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 ${
+                                className={`flex items-center px-4 py-3.5 rounded-xl text-sm font-medium transition-all duration-300 relative overflow-hidden group ${
                                     isActive
-                                        ? 'bg-purple-600/20 text-white shadow-[0_0_20px_rgba(147,51,234,0.3)] border border-purple-500/30'
-                                        : 'text-gray-400 hover:bg-white/5 hover:text-white hover:translate-x-1'
+                                        ? 'bg-purple-500/10 text-white shadow-[0_0_20px_rgba(168,85,247,0.15)] border border-purple-500/30'
+                                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
                                 }`}
                             >
-                                {item.icon}
+                                {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-purple-500 shadow-[0_0_10px_#a855f7]"></div>}
+                                <span className={`transition-transform duration-300 ${isActive ? 'scale-110 text-purple-400' : 'group-hover:scale-110 group-hover:text-white'}`}>
+                                    {item.icon}
+                                </span>
                                 {item.name}
                             </Link>
                         );
@@ -98,21 +115,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </nav>
             </div>
 
-            <div className="p-4 border-t border-white/5">
+            <div className="p-4 border-t border-white/5 bg-black/20">
                 <button
                     onClick={handleLogout}
-                    className="w-full flex items-center justify-center px-4 py-3 text-sm font-medium text-red-400 hover:text-white hover:bg-red-500/20 rounded-xl transition-all duration-300 border border-transparent hover:border-red-500/30 group"
+                    className="w-full flex items-center justify-center px-4 py-3 text-sm font-bold text-red-400 hover:text-white hover:bg-red-500/20 rounded-xl transition-all duration-300 border border-transparent hover:border-red-500/30 group"
                 >
-                    <svg className="w-5 h-5 mr-2 group-hover:animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                    Logout
+                    <svg className="w-5 h-5 mr-2 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    LOGOUT
                 </button>
             </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-6 overflow-y-auto h-screen scrollbar-hide">
-        <div className="max-w-7xl mx-auto h-full">
+      <main className="flex-1 p-4 md:p-6 overflow-y-auto h-screen scrollbar-hide relative z-10">
+        <div className="max-w-7xl mx-auto h-full pb-20 md:pb-0">
             {children}
         </div>
       </main>

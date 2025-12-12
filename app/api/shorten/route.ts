@@ -13,6 +13,7 @@ function getHostUrl(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
+    console.log('[API] Shorten request received');
     await dbConnect();
     const { searchParams } = new URL(req.url);
     const apiKey = searchParams.get('api');
@@ -25,6 +26,7 @@ export async function GET(req: NextRequest) {
     // 1. Authenticate User
     const user = await User.findOne({ app_api_key: apiKey });
     if (!user) {
+      console.error('[API] Invalid API Key:', apiKey);
       return NextResponse.json({ status: 'error', message: 'Invalid API Key' }, { status: 401 });
     }
 
@@ -33,17 +35,21 @@ export async function GET(req: NextRequest) {
     }
 
     if (!user.external_api_token || !user.external_domain) {
-      return NextResponse.json({ status: 'error', message: 'User external provider not configured' }, { status: 400 });
+      return NextResponse.json({ status: 'error', message: 'External provider not configured. Please go to Settings.' }, { status: 400 });
     }
 
-    // 2. Generate Local Intermediate Link
-    const localToken = nanoid(8); // Short token for our /start/ route
-    const baseUrl = getHostUrl(req);
-    // Vercel link that the user will share
-    const vercelShortLink = `${baseUrl}/start/${localToken}`;
+    console.log('[API] User authenticated:', user.username);
 
-    // 3. Call External Provider to shorten the ORIGINAL URL (Destination)
-    // The flow is: User -> Vercel Link (/start/token) -> External Short Link -> Original Destination
+    // 2. Generate Local Intermediate Link
+    const localToken = nanoid(8);
+    if (!localToken) {
+        throw new Error('Failed to generate local token');
+    }
+    const baseUrl = getHostUrl(req);
+    const vercelShortLink = `${baseUrl}/start/${localToken}`;
+    console.log('[API] Generated Local Token:', localToken);
+
+    // 3. Call External Provider
     let externalApiEndpoint = user.external_domain;
     if (!externalApiEndpoint.startsWith('http')) {
       externalApiEndpoint = `https://${externalApiEndpoint}/api`;
@@ -51,9 +57,10 @@ export async function GET(req: NextRequest) {
 
     const externalCallUrl = new URL(externalApiEndpoint);
     externalCallUrl.searchParams.set('api', user.external_api_token);
-    externalCallUrl.searchParams.set('url', targetUrl); // Shorten the destination, not the Vercel link
+    externalCallUrl.searchParams.set('url', targetUrl);
 
-    // Adding User-Agent to prevent bot blocking by external APIs
+    console.log('[API] Calling External Provider:', externalCallUrl.toString());
+
     const externalRes = await fetch(externalCallUrl.toString(), {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -61,7 +68,20 @@ export async function GET(req: NextRequest) {
       }
     });
 
-    const externalData = await externalRes.json().catch(() => null);
+    const responseText = await externalRes.text();
+    console.log('[API] External Response Body:', responseText);
+
+    let externalData;
+    try {
+        externalData = JSON.parse(responseText);
+    } catch (e) {
+        console.error('[API] Failed to parse external JSON:', e);
+        return NextResponse.json({
+            status: 'error',
+            message: 'External Provider returned invalid JSON',
+            raw_response: responseText.substring(0, 200)
+        }, { status: 502 });
+    }
 
     let externalShortUrl = '';
 
@@ -70,21 +90,34 @@ export async function GET(req: NextRequest) {
     } else if (externalData && externalData.short) {
        externalShortUrl = externalData.short;
     } else {
-        console.error('External API Response invalid:', externalData);
-        return NextResponse.json({ status: 'error', message: 'External provider failed to return a short URL', debug: externalData }, { status: 502 });
+        console.error('External API Response invalid format:', externalData);
+        return NextResponse.json({
+            status: 'error',
+            message: 'External provider failed to return a short URL. Check your API Token and Domain in Settings.',
+            provider_response: externalData
+        }, { status: 502 });
     }
 
     // 4. Save Link
-    // Saving localToken matching the schema change
-    await Link.create({
-      user: user._id,
-      originalUrl: targetUrl,
-      localToken: localToken,
-      externalShortUrl: externalShortUrl
-    });
+    console.log('[API] Saving Link to DB...');
+    try {
+        const newLink = await Link.create({
+          user: user._id,
+          originalUrl: targetUrl,
+          localToken: localToken,
+          externalShortUrl: externalShortUrl
+        });
+        console.log('[API] Link Saved:', newLink._id);
+    } catch (dbError: any) {
+        console.error('[API] DB Save Error:', dbError);
+        // Handle Duplicate Key explicitly
+        if (dbError.code === 11000) {
+             return NextResponse.json({ status: 'error', message: 'Internal Collision (Duplicate Token). Please try again.' }, { status: 500 });
+        }
+        throw dbError;
+    }
 
     // 5. Return Result
-    // Return the Vercel link so the user shares *that*
     return NextResponse.json({
       status: 'success',
       shortenedUrl: vercelShortLink,
@@ -92,7 +125,11 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Shorten API Error:', error);
-    return NextResponse.json({ status: 'error', message: error.message || 'Internal Server Error' }, { status: 500 });
+    console.error('[API] Critical Shorten API Error:', error);
+    return NextResponse.json({
+        status: 'error',
+        message: error.message || 'Internal Server Error',
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    }, { status: 500 });
   }
 }

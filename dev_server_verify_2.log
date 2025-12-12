@@ -1,0 +1,21 @@
+
+> universal-shortener@0.1.0 dev
+> next dev
+
+ ⚠ Port 3000 is in use, using available port 3002 instead.
+   ▲ Next.js 15.3.6
+   - Local:        http://localhost:3002
+   - Network:      http://192.168.0.2:3002
+
+ ✓ Starting...
+ ✓ Ready in 2.2s
+ ○ Compiling /login ...
+ ✓ Compiled /login in 8.2s (780 modules)
+ ✓ Compiled in 1074ms (331 modules)
+ GET /login 200 in 9300ms
+ ○ Compiling /register ...
+ ✓ Compiled /register in 1301ms (755 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /register 200 in 1550ms
+ ✓ Compiled /start/[token] in 399ms (771 modules)
+ GET /start/fake_token_123 404 in 4868ms
