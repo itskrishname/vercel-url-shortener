@@ -29,3 +29,5 @@
  ✓ Compiled in 5.2s (336 modules)
  ✓ Compiled in 484ms (336 modules)
  GET /owner/login 200 in 160ms
+ ✓ Compiled in 4.7s (753 modules)
+ ✓ Compiled in 770ms (336 modules)

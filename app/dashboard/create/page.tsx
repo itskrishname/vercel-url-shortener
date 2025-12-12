@@ -3,12 +3,40 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
+// Simple Toast Component
+function Toast({ message, type, onClose }: { message: string, type: 'success' | 'error', onClose: () => void }) {
+    useEffect(() => {
+        const timer = setTimeout(onClose, 3000);
+        return () => clearTimeout(timer);
+    }, [onClose]);
+
+    return (
+        <div className={`fixed bottom-4 right-4 z-50 p-4 rounded-xl shadow-2xl glass-card border animate-fade-in-up flex items-center gap-3 ${
+            type === 'success' ? 'border-green-500/50 bg-green-900/20' : 'border-red-500/50 bg-red-900/20'
+        }`}>
+            {type === 'success' ? (
+                 <svg className="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+            ) : (
+                 <svg className="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            )}
+            <div>
+                <h4 className={`font-bold ${type === 'success' ? 'text-green-400' : 'text-red-400'}`}>{type === 'success' ? 'Success' : 'Error'}</h4>
+                <p className="text-sm text-gray-300">{message}</p>
+            </div>
+            <button onClick={onClose} className="ml-2 text-gray-400 hover:text-white">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
+    );
+}
+
 export default function CreateLinkPage() {
   const [newLinkUrl, setNewLinkUrl] = useState('');
   const [generating, setGenerating] = useState(false);
   const [lastGenerated, setLastGenerated] = useState<any>(null);
   const [apiKey, setApiKey] = useState('');
   const [hasSettings, setHasSettings] = useState(true);
+  const [toast, setToast] = useState<{ msg: string, type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     fetch('/api/user/me')
@@ -26,7 +54,7 @@ export default function CreateLinkPage() {
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!hasSettings) {
-        alert('Please configure your External API settings first!');
+        setToast({ msg: 'Please configure your External API settings first!', type: 'error' });
         return;
     }
 
@@ -40,11 +68,12 @@ export default function CreateLinkPage() {
         if (data.status === 'success') {
             setLastGenerated(data);
             setNewLinkUrl('');
+            setToast({ msg: 'Link generated successfully!', type: 'success' });
         } else {
-            alert('Error: ' + data.message);
+             setToast({ msg: data.message || 'Error generating link', type: 'error' });
         }
     } catch (e) {
-        alert('Failed to generate link');
+        setToast({ msg: 'Failed to connect to server', type: 'error' });
     } finally {
         setGenerating(false);
     }
@@ -52,6 +81,8 @@ export default function CreateLinkPage() {
 
   return (
     <div className="max-w-4xl mx-auto pt-8">
+      {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
+
       <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-3xl font-bold text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">Create Link</h2>
@@ -82,15 +113,15 @@ export default function CreateLinkPage() {
           </div>
       )}
 
-      <div className="glass-card p-8 rounded-2xl relative overflow-hidden">
+      <div className="glass-card p-8 rounded-2xl relative overflow-hidden group">
         {/* Glow effect behind the card */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-purple-600/20 blur-[100px] -z-10 pointer-events-none"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-purple-600/20 blur-[100px] -z-10 pointer-events-none transition-all duration-500 group-hover:bg-purple-500/30"></div>
 
         <form onSubmit={handleGenerate} className="space-y-6">
             <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2 ml-1">Destination URL</label>
-                <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <div className="relative group/input">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors duration-300 group-focus-within/input:text-purple-400">
                         <svg className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                         </svg>
@@ -99,7 +130,7 @@ export default function CreateLinkPage() {
                         type="url"
                         required
                         placeholder="Paste your long link here (e.g., https://youtube.com/...)"
-                        className="glass-input block w-full pl-12 pr-4 py-4 rounded-xl text-lg placeholder-gray-500"
+                        className="glass-input block w-full pl-12 pr-4 py-4 rounded-xl text-lg placeholder-gray-500 focus:shadow-[0_0_20px_rgba(168,85,247,0.3)] transition-all duration-300 border-white/10"
                         value={newLinkUrl}
                         onChange={(e) => setNewLinkUrl(e.target.value)}
                     />
@@ -108,7 +139,7 @@ export default function CreateLinkPage() {
             <button
                 type="submit"
                 disabled={generating || !hasSettings}
-                className="w-full glass-button-primary py-4 rounded-xl text-lg font-bold tracking-wide disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full glass-button-primary py-4 rounded-xl text-lg font-bold tracking-wide disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.01] active:scale-[0.99] transition-all duration-200"
             >
                 {generating ? (
                     <span className="flex items-center justify-center">
@@ -160,7 +191,7 @@ export default function CreateLinkPage() {
                             <button
                                 onClick={() => {
                                     navigator.clipboard.writeText(lastGenerated.shortenedUrl);
-                                    // Could add a toast here
+                                    setToast({ msg: 'Copied to clipboard!', type: 'success' });
                                 }}
                                 className="glass-button px-6 py-4 rounded-lg font-bold hover:bg-white/10 active:scale-95 transition-all whitespace-nowrap"
                             >
