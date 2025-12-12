@@ -11,6 +11,15 @@ function getHostUrl(req: NextRequest) {
   return `${protocol}://${host}`;
 }
 
+function isValidUrl(string: string) {
+  try {
+    const url = new URL(string);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch (_) {
+    return false;
+  }
+}
+
 export async function GET(req: NextRequest) {
   try {
     console.log('[API] Shorten request received');
@@ -19,11 +28,20 @@ export async function GET(req: NextRequest) {
     const apiKey = searchParams.get('api');
     const targetUrl = searchParams.get('url');
 
+    // 1. Basic Validation
     if (!apiKey || !targetUrl) {
       return NextResponse.json({ status: 'error', message: 'Missing api or url parameter' }, { status: 400 });
     }
 
-    // 1. Authenticate User
+    // STRICT URL VALIDATION to prevent upstream errors/timeouts
+    if (!isValidUrl(targetUrl)) {
+        return NextResponse.json({
+            status: 'error',
+            message: 'Invalid URL format. URL must start with http:// or https://'
+        }, { status: 400 });
+    }
+
+    // 2. Authenticate User
     const user = await User.findOne({ app_api_key: apiKey });
     if (!user) {
       console.error('[API] Invalid API Key:', apiKey);
@@ -40,7 +58,7 @@ export async function GET(req: NextRequest) {
 
     console.log('[API] User authenticated:', user.username);
 
-    // 2. Generate Local Intermediate Link
+    // 3. Generate Local Intermediate Link
     let localToken;
     let isUnique = false;
     let retries = 0;
@@ -62,39 +80,51 @@ export async function GET(req: NextRequest) {
     const baseUrl = getHostUrl(req);
     const vercelShortLink = `${baseUrl}/start/${localToken}`;
 
-    // 3. Call External Provider
+    // 4. Call External Provider
     let externalApiEndpoint = user.external_domain.trim();
-
-    // Clean up protocol if user added it
     externalApiEndpoint = externalApiEndpoint.replace(/^https?:\/\//, '');
 
-    // Check if the user accidentally included '/api' at the end
-    // Logic: If it ends with '/api', we keep it as base but don't append another '/api'.
-    // If it doesn't, we append '/api'.
-    // BUT most users just paste 'gplinks.com'.
-    // Some might paste 'gplinks.com/api'.
+    if (!externalApiEndpoint.includes('.')) {
+        return NextResponse.json({
+            status: 'error',
+            message: 'Invalid External Domain in Settings. Please enter a valid domain (e.g., gplinks.com).'
+        }, { status: 400 });
+    }
 
     let apiUrl = '';
     if (externalApiEndpoint.endsWith('/api') || externalApiEndpoint.endsWith('/api/')) {
-         // User provided full path to api endpoint
          apiUrl = `https://${externalApiEndpoint.replace(/\/$/, '')}`;
     } else {
-         // Assume standard implementation
          apiUrl = `https://${externalApiEndpoint.replace(/\/$/, '')}/api`;
     }
 
-    // Construct final URL
-    // We manually construct the query string to ensure encoding is correct
     const externalCallUrl = `${apiUrl}?api=${user.external_api_token}&url=${encodeURIComponent(targetUrl)}`;
-
     console.log('[API] Calling External Provider:', externalCallUrl.replace(user.external_api_token, '***'));
 
-    const externalRes = await fetch(externalCallUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*'
-      }
-    });
+    // TIMEOUT HANDLING: Abort fetch if it takes too long (8 seconds)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+    let externalRes;
+    try {
+        externalRes = await fetch(externalCallUrl, {
+            signal: controller.signal,
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'application/json, text/plain, */*'
+            }
+        });
+    } catch (fetchError: any) {
+        if (fetchError.name === 'AbortError') {
+            return NextResponse.json({
+                status: 'error',
+                message: 'External Provider Timed Out (8s limit). The provider might be slow or blocking requests.'
+            }, { status: 504 });
+        }
+        throw fetchError;
+    } finally {
+        clearTimeout(timeoutId);
+    }
 
     const responseText = await externalRes.text();
     console.log('[API] External Response Body:', responseText);
@@ -104,9 +134,10 @@ export async function GET(req: NextRequest) {
         externalData = JSON.parse(responseText);
     } catch (e) {
         console.error('[API] Failed to parse external JSON:', e);
+        // If status is 200 but JSON is invalid, it's likely an HTML page (like Cloudflare challenge or 404)
         return NextResponse.json({
             status: 'error',
-            message: 'External Provider returned invalid JSON',
+            message: 'External Provider returned invalid JSON. Check your settings or the provider status.',
             raw_response: responseText.substring(0, 200)
         }, { status: 502 });
     }
@@ -119,16 +150,15 @@ export async function GET(req: NextRequest) {
        externalShortUrl = externalData.short;
     } else {
         console.error('External API Response invalid format:', externalData);
-        // Better Error Message for User
         const providerMsg = externalData.message || externalData.msg || externalData.error || 'No error message provided';
         return NextResponse.json({
             status: 'error',
-            message: `External provider failed: ${providerMsg}. Check your API Token and Domain in Settings.`,
+            message: `External provider failed: ${providerMsg}`,
             provider_response: externalData
         }, { status: 502 });
     }
 
-    // 4. Save Link
+    // 5. Save Link
     try {
         const newLink = await Link.create({
           user: user._id,
@@ -144,14 +174,14 @@ export async function GET(req: NextRequest) {
         if (dbError.code === 11000) {
              return NextResponse.json({
                  status: 'error',
-                 message: 'Internal Collision (Duplicate Token). Please try again.',
+                 message: 'Internal Collision. Please try again.',
                  debug: dbError.keyValue
              }, { status: 500 });
         }
         throw dbError;
     }
 
-    // 5. Return Result
+    // 6. Return Result
     return NextResponse.json({
       status: 'success',
       shortenedUrl: vercelShortLink,
