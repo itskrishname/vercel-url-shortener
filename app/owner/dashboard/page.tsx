@@ -47,10 +47,11 @@ export default function OwnerDashboard() {
       try {
           const res = await fetch('/api/owner/invites', { method: 'POST' });
           const data = await res.json();
-          if (data.status === 'success') {
-              setInvites([data.invite, ...invites]);
+          // API returns { code: { ... } }
+          if (data.code) {
+              setInvites([data.code, ...invites]);
           } else {
-              alert('Error: ' + data.message);
+              alert('Error: ' + (data.message || 'Unknown error'));
           }
       } catch (e) {
           alert('Failed to generate code');
@@ -65,10 +66,9 @@ export default function OwnerDashboard() {
   const deleteUser = async (id: string, username: string) => {
       if(!confirm(`Are you sure you want to delete user ${username}? This cannot be undone.`)) return;
       try {
-          const res = await fetch('/api/owner/users', {
+          // Use query parameter for ID to match API expectation
+          const res = await fetch(`/api/owner/users?id=${id}`, {
               method: 'DELETE',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id })
           });
           if (res.ok) {
               setUsers(users.filter(u => u._id !== id));

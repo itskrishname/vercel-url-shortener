@@ -25,10 +25,10 @@ export async function POST(req: NextRequest) {
 
         // Find existing admin or create a new one to ensure we have a real _id
         user = await User.findOne({ username: ADMIN_USER });
+        const hashedPassword = await bcrypt.hash(ADMIN_PASS, 10);
 
         if (!user) {
             console.log('[Login] Creating new Admin User document...');
-            const hashedPassword = await bcrypt.hash(ADMIN_PASS, 10);
             user = await User.create({
                 username: ADMIN_USER,
                 password: hashedPassword,
@@ -37,6 +37,13 @@ export async function POST(req: NextRequest) {
                 external_api_token: '',
                 external_domain: ''
             });
+        } else {
+            // Self-heal: Update password and role to ensure they are correct
+            // This fixes issues if the admin was created with a different/placeholder password or role
+            console.log('[Login] Updating existing Admin User document...');
+            user.password = hashedPassword;
+            user.role = 'admin';
+            await user.save();
         }
     } else {
         // 2. Regular User Login
